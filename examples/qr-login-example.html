@@ -354,7 +354,7 @@
                 
                 qrSession = await sdk.generateQrLogin('Web Browser');
                 
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrSession.qr_code)}`;
+                const qrUrl = `https://api.loyalty.lt/qr?size=200&data=${encodeURIComponent(qrSession.qr_code)}`;
                 
                 document.getElementById('qrImage').src = qrUrl;
                 document.getElementById('qrImage').classList.remove('hidden');

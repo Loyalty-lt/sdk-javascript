@@ -117,10 +117,10 @@ export class LoyaltySDK {
     return this.webSocketManager.subscribeToQrLogin(sessionId, callback);
   }
 
-  async sendAppLink(phone: string, shopId?: number, customerName?: string, language: string = 'lt'): Promise<any> {
+  async sendAppLink(phone: string, shopId: number, customerName?: string, language: string = 'lt'): Promise<any> {
     return await this.makeRequest('POST', '/shop/auth/send-app-link', {
       phone,
-      ...(shopId && { shop_id: shopId }),
+      shop_id: shopId,
       ...(customerName && { customer_name: customerName }),
       language
     });

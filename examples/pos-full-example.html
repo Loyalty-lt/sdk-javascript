@@ -478,7 +478,7 @@
                 
                 qrSession = await sdk.generateQrCardSession('POS Terminal');
                 
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrSession.qr_code)}`;
+                const qrUrl = `https://api.loyalty.lt/qr?size=256&data=${encodeURIComponent(qrSession.qr_code)}`;
                 document.getElementById('cdQrImage').src = qrUrl;
                 
                 document.getElementById('qrStatus').textContent = 'QR: Active';
