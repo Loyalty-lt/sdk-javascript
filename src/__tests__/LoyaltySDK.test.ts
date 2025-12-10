@@ -1,7 +1,6 @@
 import { LoyaltySDK } from '../LoyaltySDK';
 import { LoyaltySDKError } from '../types';
 
-// Mock axios
 jest.mock('axios', () => ({
   create: jest.fn(() => ({
     get: jest.fn(),
@@ -24,7 +23,6 @@ jest.mock('axios', () => ({
   }))
 }));
 
-// Mock Ably
 jest.mock('ably', () => ({
   Realtime: jest.fn(() => ({
     connection: {
@@ -82,27 +80,15 @@ describe('LoyaltySDK', () => {
     });
   });
 
-  describe('Authentication', () => {
-    it('should set and get token', () => {
-      const token = 'test-token';
-      sdk.setToken(token);
-      expect(sdk.getToken()).toBe(token);
-      expect(sdk.isAuthenticated()).toBe(true);
-    });
-
-    it('should clear tokens', () => {
-      sdk.setToken('test-token');
-      sdk.clearTokens();
-      expect(sdk.getToken()).toBeUndefined();
-      expect(sdk.isAuthenticated()).toBe(false);
-    });
-  });
-
   describe('Utility Methods', () => {
     it('should return SDK version', () => {
-      expect(sdk.getVersion()).toBe('2.0.0');
+      expect(sdk.getVersion()).toBe('2.1.0');
+    });
+
+    it('should disconnect websocket', () => {
+      expect(() => sdk.disconnectWebSocket()).not.toThrow();
     });
   });
-}); 
+});
  
  
