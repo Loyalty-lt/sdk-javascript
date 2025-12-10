@@ -16,7 +16,8 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": false
+    "noEmit": false,
+    "types": ["node", "react", "react-dom"]
   },
   "include": [
     "src/**/*"
