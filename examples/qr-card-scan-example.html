@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Card Scan - Loyalty.lt SDK Example</title>
+    
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.2/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ably@1.2.48/build/ably.min.js"></script>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts as fallback -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Satoshi', 'Inter', 'system-ui', 'sans-serif'],
+                        'display': ['Clash Display', 'Satoshi', 'sans-serif'],
+                        'heading': ['Clash Display', 'Satoshi', 'sans-serif'],
+                    },
+                    colors: {
+                        'loyalty-primary': '#29594B',
+                        'loyalty-heading': '#19352D',
+                        'loyalty-text': '#4B5563',
+                        'loyalty-accent': '#CFFF45',
+                        'loyalty-accent-dark': '#E6FD5A',
+                        'loyalty-light-bg': '#EDF1EE',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Satoshi Font Family */
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 300;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Light.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 400;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Regular.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 500;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Medium.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 600;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Bold.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 700;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Bold.woff2') format('woff2');
+        }
+
+        /* Clash Display Font Family */
+        @font-face {
+            font-family: 'Clash Display';
+            font-style: normal;
+            font-weight: 400;
+            src: url('https://partners.loyalty.lt/public/assets/clash-display/fonts/ClashDisplay-Regular.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Clash Display';
+            font-style: normal;
+            font-weight: 500;
+            src: url('https://partners.loyalty.lt/public/assets/clash-display/fonts/ClashDisplay-Medium.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Clash Display';
+            font-style: normal;
+            font-weight: 600;
+            src: url('https://partners.loyalty.lt/public/assets/clash-display/fonts/ClashDisplay-Semibold.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Clash Display';
+            font-style: normal;
+            font-weight: 700;
+            src: url('https://partners.loyalty.lt/public/assets/clash-display/fonts/ClashDisplay-Bold.woff2') format('woff2');
+        }
+        
+        body {
+            font-family: 'Satoshi', 'Inter', system-ui, sans-serif;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Clash Display', 'Satoshi', sans-serif;
+        }
+        
+        .loyalty-gradient {
+            background: linear-gradient(135deg, #29594B 0%, #19352D 100%);
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-loyalty-light-bg flex flex-col">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-loyalty-primary/20 flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <a href="https://loyalty.lt" class="hover:opacity-80 transition-opacity">
+                    <img src="https://cdn.loyalty.lt/loyalty-public/logo/logo_light.png" alt="Loyalty.lt" class="h-10 w-auto">
+                </a>
+                <span class="text-sm text-loyalty-text/70">SDK Example: QR Card Scan (POS)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 py-8 px-4">
+        <div class="max-w-2xl mx-auto space-y-6">
+            
+            <!-- Configuration Section -->
+            <div id="configSection" class="bg-white rounded-xl shadow-xl border border-loyalty-primary/20 overflow-hidden">
+                <div class="loyalty-gradient p-6 text-center">
+                    <h2 class="text-2xl font-bold text-white">Partner API Configuration</h2>
+                    <p class="text-white/80 text-sm mt-2">Enter your API credentials to start POS integration</p>
+                </div>
+                
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-loyalty-text/70 mb-2">API Key</label>
+                        <input 
+                            type="text" 
+                            id="apiKey" 
+                            placeholder="lty_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                            class="w-full px-4 py-3 border border-loyalty-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-loyalty-primary/50 text-loyalty-heading"
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-loyalty-text/70 mb-2">API Secret</label>
+                        <input 
+                            type="password" 
+                            id="apiSecret" 
+                            placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                            class="w-full px-4 py-3 border border-loyalty-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-loyalty-primary/50 text-loyalty-heading"
+                        >
+                    </div>
+                    <button 
+                        onclick="initialize()" 
+                        class="w-full loyalty-gradient text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        Connect & Generate QR
+                    </button>
+                </div>
+            </div>
+
+            <!-- QR Code Section -->
+            <div id="qrSection" class="hidden bg-white rounded-xl shadow-xl border border-loyalty-primary/20 overflow-hidden">
+                <div class="p-8 text-center">
+                    <h2 class="text-2xl font-bold text-loyalty-heading mb-2">Customer Identification</h2>
+                    <p class="text-loyalty-text/70 mb-6">Customer scans this QR with Loyalty.lt app to identify themselves</p>
+                    
+                    <!-- QR Code -->
+                    <div class="bg-loyalty-light-bg rounded-xl p-6 mb-6 inline-block">
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <div id="qrPlaceholder" class="w-[220px] h-[220px] flex items-center justify-center bg-loyalty-light-bg rounded-lg">
+                                <div class="w-10 h-10 border-4 border-loyalty-primary border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                            <img id="qrImage" src="" alt="QR Code" class="hidden w-[220px] h-[220px]">
+                        </div>
+                    </div>
+                    
+                    <!-- Timer -->
+                    <div class="mb-4">
+                        <p class="text-loyalty-text/70 text-sm mb-2">Expires in: <span id="timerText" class="font-medium text-loyalty-heading">5:00</span></p>
+                        <div class="w-64 mx-auto h-1 bg-loyalty-light-bg rounded-full overflow-hidden">
+                            <div id="timerProgress" class="h-full bg-loyalty-primary transition-all duration-1000" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div id="status" class="mb-6 px-6 py-3 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 inline-block">
+                        Waiting for customer to scan...
+                    </div>
+                    
+                    <div class="block">
+                        <button 
+                            onclick="regenerateQR()" 
+                            class="border-2 border-loyalty-primary text-loyalty-primary px-6 py-3 rounded-full font-semibold hover:bg-loyalty-primary/5 transition-all duration-200"
+                        >
+                            Generate New QR Code
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Card Data -->
+            <div id="customerSection" class="hidden bg-white rounded-xl shadow-xl border border-loyalty-primary/20 overflow-hidden">
+                <div class="loyalty-gradient p-8 text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Customer Identified</h3>
+                </div>
+                
+                <div class="p-6 space-y-4">
+                    <div class="flex justify-between items-center py-3 border-b border-loyalty-primary/10">
+                        <span class="text-loyalty-text/70">Name</span>
+                        <span id="customerName" class="font-medium text-loyalty-heading">-</span>
+                    </div>
+                    <div class="flex justify-between items-center py-3 border-b border-loyalty-primary/10">
+                        <span class="text-loyalty-text/70">Card Number</span>
+                        <span id="cardNumber" class="font-medium text-loyalty-heading font-mono">-</span>
+                    </div>
+                    <div class="flex justify-between items-center py-3 border-b border-loyalty-primary/10">
+                        <span class="text-loyalty-text/70">Phone</span>
+                        <span id="customerPhone" class="font-medium text-loyalty-heading">-</span>
+                    </div>
+                    <div class="flex justify-between items-center py-3 border-b border-loyalty-primary/10">
+                        <span class="text-loyalty-text/70">Points Balance</span>
+                        <span id="pointsBalance" class="text-2xl font-bold text-loyalty-primary">0</span>
+                    </div>
+                    <div id="redemptionRow" class="hidden flex justify-between items-center py-3">
+                        <span class="text-loyalty-text/70">Available Discount</span>
+                        <span id="availableDiscount" class="font-medium text-green-600">-</span>
+                    </div>
+                    
+                    <button 
+                        onclick="newTransaction()" 
+                        class="w-full loyalty-gradient text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] mt-4"
+                    >
+                        New Customer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Event Log -->
+            <div class="bg-white rounded-xl shadow-xl border border-loyalty-primary/20 overflow-hidden">
+                <div class="px-6 py-4 border-b border-loyalty-primary/10">
+                    <h3 class="font-semibold text-loyalty-heading flex items-center gap-2">
+                        <svg class="w-5 h-5 text-loyalty-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Event Log
+                    </h3>
+                </div>
+                <div id="logs" class="p-4 bg-loyalty-heading/5 max-h-48 overflow-y-auto font-mono text-xs space-y-1">
+                    <div class="text-blue-600">[Ready] Enter API credentials to start</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-loyalty-primary/10 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-sm text-loyalty-text/70">© 2024-2025 Loyalty.lt • SDK Example</p>
+                <div class="flex items-center gap-4">
+                    <a href="https://docs.loyalty.lt" target="_blank" class="text-sm text-loyalty-primary hover:underline">Documentation</a>
+                    <a href="https://github.com/loyaltylt" target="_blank" class="text-sm text-loyalty-primary hover:underline">GitHub</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../dist/index.umd.js"></script>
+    <script>
+        let sdk = null;
+        let qrSession = null;
+        let ablyClient = null;
+        let ablyChannel = null;
+        let timerInterval = null;
+        
+        const QR_DURATION = 5 * 60 * 1000;
+
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const entry = document.createElement('div');
+            const colors = {
+                info: 'text-blue-600',
+                success: 'text-green-600',
+                error: 'text-red-600'
+            };
+            entry.className = colors[type] || colors.info;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(entry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        async function initialize() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const apiSecret = document.getElementById('apiSecret').value.trim();
+
+            if (!apiKey || !apiSecret) {
+                alert('Please enter API Key and Secret');
+                return;
+            }
+
+            try {
+                const SDK = window.LoyaltySDK?.LoyaltySDK || window.LoyaltySDK?.default || window.LoyaltySDK;
+                sdk = new SDK({
+                    apiKey: apiKey,
+                    apiSecret: apiSecret,
+                    environment: 'production',
+                    locale: 'lt'
+                });
+
+                log('SDK initialized', 'success');
+                
+                document.getElementById('configSection').classList.add('hidden');
+                document.getElementById('qrSection').classList.remove('hidden');
+                
+                await generateQR();
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function generateQR() {
+            if (!sdk) return;
+
+            try {
+                log('Generating QR session...');
+                updateStatus('pending', 'Generating QR code...');
+                
+                document.getElementById('qrPlaceholder').classList.remove('hidden');
+                document.getElementById('qrImage').classList.add('hidden');
+
+                qrSession = await sdk.generateQrCardSession('POS Demo Terminal');
+                log(`Session: ${qrSession.session_id}`, 'success');
+
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrSession.qr_code)}`;
+                
+                document.getElementById('qrImage').src = qrUrl;
+                document.getElementById('qrImage').classList.remove('hidden');
+                document.getElementById('qrPlaceholder').classList.add('hidden');
+
+                updateStatus('pending', 'Waiting for customer to scan...');
+                startTimer();
+                await subscribeToEvents(qrSession.session_id);
+
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                updateStatus('error', 'Failed to generate QR code');
+            }
+        }
+
+        async function subscribeToEvents(sessionId) {
+            try {
+                if (ablyChannel) ablyChannel.unsubscribe();
+                if (ablyClient) ablyClient.close();
+
+                const tokenResponse = await sdk.getAblyToken(sessionId);
+                log(`Ably channel: ${tokenResponse.channel}`, 'success');
+
+                ablyClient = new Ably.Realtime({ token: tokenResponse.token });
+                ablyChannel = ablyClient.channels.get(tokenResponse.channel);
+
+                ablyChannel.subscribe('card_identified', (message) => {
+                    log('🎉 Card identified!', 'success');
+                    handleCardIdentified(message.data);
+                });
+
+                log('Subscribed to events', 'success');
+
+            } catch (error) {
+                log(`Ably error: ${error.message}`, 'error');
+                startPolling(sessionId);
+            }
+        }
+
+        function startPolling(sessionId) {
+            log('Fallback to polling...', 'info');
+            const interval = setInterval(async () => {
+                try {
+                    const status = await sdk.pollQrCardStatus(sessionId);
+                    if (status.status === 'completed' && status.card_data) {
+                        clearInterval(interval);
+                        handleCardIdentified({ card_data: status.card_data });
+                    } else if (status.status === 'expired') {
+                        clearInterval(interval);
+                        updateStatus('error', 'Session expired');
+                        log('Session expired', 'error');
+                    }
+                } catch (e) {}
+            }, 2000);
+
+            setTimeout(() => clearInterval(interval), QR_DURATION);
+        }
+
+        function handleCardIdentified(data) {
+            const cardData = data.card_data || data;
+            
+            document.getElementById('customerName').textContent = cardData.user?.name || 'Customer';
+            document.getElementById('cardNumber').textContent = cardData.card_number || '-';
+            document.getElementById('customerPhone').textContent = cardData.user?.phone || '-';
+            document.getElementById('pointsBalance').textContent = (cardData.points_balance || cardData.points || 0).toLocaleString();
+
+            if (cardData.redemption?.enabled) {
+                const maxDiscount = Math.floor((cardData.points_balance || cardData.points) / cardData.redemption.points_per_currency) 
+                                  * cardData.redemption.currency_amount;
+                document.getElementById('availableDiscount').textContent = `€${maxDiscount.toFixed(2)}`;
+                document.getElementById('redemptionRow').classList.remove('hidden');
+            } else {
+                document.getElementById('redemptionRow').classList.add('hidden');
+            }
+
+            document.getElementById('qrSection').classList.add('hidden');
+            document.getElementById('customerSection').classList.remove('hidden');
+            
+            updateStatus('success', 'Customer identified!');
+            cleanup();
+
+            log(`Customer: ${cardData.user?.name}`, 'success');
+            log(`Card: ${cardData.card_number}`, 'success');
+            log(`Points: ${cardData.points_balance || cardData.points}`, 'success');
+        }
+
+        function updateStatus(type, message) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            
+            statusEl.className = 'mb-6 px-6 py-3 rounded-full text-sm font-medium inline-block ';
+            if (type === 'pending') {
+                statusEl.className += 'bg-yellow-100 text-yellow-800';
+            } else if (type === 'success') {
+                statusEl.className += 'bg-green-100 text-green-800';
+            } else if (type === 'error') {
+                statusEl.className += 'bg-red-100 text-red-800';
+            }
+        }
+
+        function startTimer() {
+            let remaining = QR_DURATION;
+
+            const update = () => {
+                const mins = Math.floor(remaining / 60000);
+                const secs = Math.floor((remaining % 60000) / 1000);
+                document.getElementById('timerText').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                document.getElementById('timerProgress').style.width = `${(remaining / QR_DURATION) * 100}%`;
+
+                if (remaining <= 0) {
+                    log('Session expired, regenerating...', 'info');
+                    regenerateQR();
+                    return;
+                }
+                remaining -= 1000;
+            };
+
+            update();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(update, 1000);
+        }
+
+        function cleanup() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            if (ablyChannel) {
+                ablyChannel.unsubscribe();
+                ablyChannel = null;
+            }
+            if (ablyClient) {
+                ablyClient.close();
+                ablyClient = null;
+            }
+        }
+
+        function regenerateQR() {
+            cleanup();
+            generateQR();
+        }
+
+        function newTransaction() {
+            cleanup();
+            document.getElementById('customerSection').classList.add('hidden');
+            document.getElementById('qrSection').classList.remove('hidden');
+            log('Ready for new customer');
+            generateQR();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS System - Loyalty.lt SDK Example</title>
+    
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.2/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ably@1.2.48/build/ably.min.js"></script>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts as fallback -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Satoshi', 'Inter', 'system-ui', 'sans-serif'],
+                        'display': ['Clash Display', 'Satoshi', 'sans-serif'],
+                        'heading': ['Clash Display', 'Satoshi', 'sans-serif'],
+                    },
+                    colors: {
+                        'loyalty-primary': '#29594B',
+                        'loyalty-heading': '#19352D',
+                        'loyalty-text': '#4B5563',
+                        'loyalty-accent': '#CFFF45',
+                        'loyalty-accent-dark': '#E6FD5A',
+                        'loyalty-light-bg': '#EDF1EE',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Satoshi Font Family */
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 300;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Light.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 400;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Regular.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 500;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Medium.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 600;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Bold.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 700;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Bold.woff2') format('woff2');
+        }
+
+        /* Clash Display Font Family */
+        @font-face {
+            font-family: 'Clash Display';
+            font-style: normal;
+            font-weight: 400;
+            src: url('https://partners.loyalty.lt/public/assets/clash-display/fonts/ClashDisplay-Regular.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Clash Display';
+            font-style: normal;
+            font-weight: 500;
+            src: url('https://partners.loyalty.lt/public/assets/clash-display/fonts/ClashDisplay-Medium.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Clash Display';
+            font-style: normal;
+            font-weight: 600;
+            src: url('https://partners.loyalty.lt/public/assets/clash-display/fonts/ClashDisplay-Semibold.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Clash Display';
+            font-style: normal;
+            font-weight: 700;
+            src: url('https://partners.loyalty.lt/public/assets/clash-display/fonts/ClashDisplay-Bold.woff2') format('woff2');
+        }
+        
+        body {
+            font-family: 'Satoshi', 'Inter', system-ui, sans-serif;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Clash Display', 'Satoshi', sans-serif;
+        }
+        
+        .loyalty-gradient {
+            background: linear-gradient(135deg, #29594B 0%, #19352D 100%);
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: rgba(41, 89, 75, 0.3);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden">
+    <!-- LOGIN MODAL -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-loyalty-light-bg flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-loyalty-primary/20 max-w-md w-full overflow-hidden">
+            <div class="loyalty-gradient p-8 text-center">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-white">POS System Login</h2>
+                <p class="text-white/80 text-sm mt-2">Enter your Partner API credentials</p>
+            </div>
+            
+            <div class="p-8 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-loyalty-text/70 mb-2">API Key</label>
+                    <input 
+                        type="text" 
+                        id="apiKeyInput" 
+                        placeholder="lty_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        class="w-full px-4 py-3 border border-loyalty-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-loyalty-primary/50 text-loyalty-heading"
+                    >
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-loyalty-text/70 mb-2">API Secret</label>
+                    <input 
+                        type="password" 
+                        id="apiSecretInput" 
+                        placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        class="w-full px-4 py-3 border border-loyalty-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-loyalty-primary/50 text-loyalty-heading"
+                    >
+                </div>
+                <button 
+                    onclick="connectPOS()" 
+                    class="w-full loyalty-gradient text-white px-6 py-4 rounded-full font-semibold hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                    <span id="connectBtnText">Connect</span>
+                </button>
+                <p id="loginError" class="hidden text-red-600 text-sm text-center"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUCCESS MODAL -->
+    <div id="successModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
+            <div class="loyalty-gradient p-8 text-center">
+                <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
+                    <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-white">Payment Successful!</h2>
+            </div>
+            <div class="p-6 text-center">
+                <p id="successMessage" class="text-loyalty-text/70 mb-2"></p>
+                <p id="pointsEarned" class="text-xl font-bold text-loyalty-primary mb-6"></p>
+                <button 
+                    onclick="closeSuccessModal()" 
+                    class="w-full loyalty-gradient text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all"
+                >
+                    New Transaction
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN SPLIT LAYOUT -->
+    <div class="grid grid-cols-2 h-screen">
+        
+        <!-- LEFT: CUSTOMER DISPLAY -->
+        <div class="loyalty-gradient flex flex-col items-center justify-center text-center p-8 relative">
+            <img src="https://cdn.loyalty.lt/loyalty-public/logo/logo_dark.png" alt="Loyalty.lt" class="h-10 absolute top-6 left-6">
+            
+            <!-- Scan View -->
+            <div id="cdScanView" class="flex flex-col items-center">
+                <h2 class="text-4xl font-bold text-white mb-8">Welcome!</h2>
+                
+                <div class="bg-white p-6 rounded-2xl shadow-2xl mb-8">
+                    <img id="cdQrImage" class="w-64 h-64" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Crect fill='%23EDF1EE' width='256' height='256'/%3E%3Ctext x='128' y='128' text-anchor='middle' fill='%2329594B' font-size='14'%3EConnecting...%3C/text%3E%3C/svg%3E" alt="QR Code">
+                </div>
+                
+                <h3 class="text-2xl text-white font-medium mb-2">Scan with Loyalty.lt app</h3>
+                <p class="text-white/70">to earn points & access rewards</p>
+                
+                <div class="mt-6 px-6 py-3 rounded-full bg-white/10 text-white/90 flex items-center gap-3">
+                    <div class="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin"></div>
+                    Waiting for scan...
+                </div>
+            </div>
+            
+            <!-- Customer View -->
+            <div id="cdCustomerView" class="hidden flex flex-col items-center">
+                <h2 class="text-3xl text-white/80 mb-6">Welcome back!</h2>
+                
+                <div class="bg-white/10 backdrop-blur rounded-2xl p-8 mb-6 min-w-[320px]">
+                    <div id="cdCustomerName" class="text-3xl font-bold text-white mb-2">-</div>
+                    <div class="text-white/60 text-sm mb-4">Your Points</div>
+                    <div id="cdCustomerPoints" class="text-6xl font-bold text-loyalty-accent">0</div>
+                </div>
+                
+                <div class="bg-white/5 rounded-xl p-6 min-w-[320px]">
+                    <div class="text-white/60 text-sm mb-2">Current Total</div>
+                    <div id="cdTotal" class="text-5xl font-bold text-white mb-2">€0.00</div>
+                    <div id="cdPointsEarn" class="text-loyalty-accent text-lg">You'll earn +0 points</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- RIGHT: POS SYSTEM -->
+        <div class="bg-white flex flex-col h-screen">
+            <!-- Header -->
+            <div class="bg-loyalty-light-bg border-b border-loyalty-primary/10 px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <img src="https://cdn.loyalty.lt/loyalty-public/logo/logo_light.png" alt="Loyalty.lt" class="h-8">
+                    <span class="font-semibold text-loyalty-heading">POS System</span>
+                </div>
+                <div class="text-right">
+                    <div id="shopName" class="font-semibold text-loyalty-heading">-</div>
+                    <div id="shopAddress" class="text-sm text-loyalty-text/70">-</div>
+                </div>
+            </div>
+            
+            <!-- Status Bar -->
+            <div class="bg-white border-b border-loyalty-primary/10 px-6 py-3 flex gap-3 flex-wrap">
+                <span id="connectionStatus" class="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">● Disconnected</span>
+                <span id="customerStatus" class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">No customer</span>
+                <span id="qrStatus" class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">QR: Waiting</span>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="flex-1 grid grid-cols-[1fr_280px] overflow-hidden">
+                <!-- Products & Customer -->
+                <div class="p-4 overflow-y-auto scrollbar-thin space-y-4">
+                    <!-- Products -->
+                    <div class="bg-loyalty-light-bg rounded-xl p-4">
+                        <h3 class="text-xs uppercase tracking-wider text-loyalty-text/50 font-semibold mb-3">Products</h3>
+                        <div id="productsGrid" class="grid grid-cols-5 gap-2"></div>
+                    </div>
+                    
+                    <!-- Customer -->
+                    <div class="bg-loyalty-light-bg rounded-xl p-4">
+                        <h3 class="text-xs uppercase tracking-wider text-loyalty-text/50 font-semibold mb-3">Customer</h3>
+                        
+                        <div id="noCustomer" class="text-center py-6">
+                            <div class="text-4xl mb-2">👤</div>
+                            <p class="text-loyalty-text/70 text-sm">No customer identified</p>
+                            <p class="text-loyalty-text/50 text-xs mt-1">Waiting for QR scan...</p>
+                        </div>
+                        
+                        <div id="customerCard" class="hidden loyalty-gradient rounded-xl p-4 text-white">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <div id="customerName" class="text-lg font-semibold">-</div>
+                                    <div id="customerPhone" class="text-white/70 text-sm">-</div>
+                                </div>
+                                <button onclick="clearCustomer()" class="text-white/70 hover:text-white text-xs px-2 py-1 bg-white/10 rounded-full">
+                                    Clear
+                                </button>
+                            </div>
+                            <div class="flex justify-between items-end">
+                                <div>
+                                    <div class="text-white/60 text-xs">Points</div>
+                                    <div id="customerPoints" class="text-2xl font-bold">0</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-white/60 text-xs">Value</div>
+                                    <div id="pointsWorth" class="text-lg font-semibold">€0.00</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Tabs -->
+                        <div class="mt-4 border-t border-loyalty-primary/10 pt-4">
+                            <div class="flex gap-1 mb-3">
+                                <button class="tab-btn flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-loyalty-primary text-white" onclick="showCustomerTab('lookup')">Card Lookup</button>
+                                <button class="tab-btn flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-white text-loyalty-text border border-loyalty-primary/20" onclick="showCustomerTab('sendlink')">Send App Link</button>
+                            </div>
+                            
+                            <div id="lookupTab">
+                                <div class="flex gap-2">
+                                    <input type="text" id="cardNumberInput" placeholder="Enter card number..." class="flex-1 px-3 py-2 text-sm border border-loyalty-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-loyalty-primary/50">
+                                    <button onclick="lookupCard()" class="px-4 py-2 text-sm bg-loyalty-primary text-white rounded-lg font-medium hover:bg-loyalty-heading transition-colors">Search</button>
+                                </div>
+                            </div>
+                            
+                            <div id="sendlinkTab" class="hidden">
+                                <div class="flex gap-2">
+                                    <input type="tel" id="phoneInput" placeholder="+370 6XX XXXXX" class="flex-1 px-3 py-2 text-sm border border-loyalty-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-loyalty-primary/50">
+                                    <button onclick="sendAppLink()" class="px-4 py-2 text-sm bg-loyalty-primary text-white rounded-lg font-medium hover:bg-loyalty-heading transition-colors">
+                                        <span id="sendLinkBtnText">📱 Send</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cart Sidebar -->
+                <div class="bg-loyalty-light-bg border-l border-loyalty-primary/10 p-4 flex flex-col">
+                    <h3 class="text-xs uppercase tracking-wider text-loyalty-text/50 font-semibold mb-3">Cart</h3>
+                    
+                    <div id="cartItems" class="flex-1 overflow-y-auto scrollbar-thin">
+                        <p class="text-loyalty-text/50 text-sm text-center py-8">Cart is empty</p>
+                    </div>
+                    
+                    <div class="border-t border-loyalty-primary/10 pt-4 mt-4 space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-loyalty-text/70">Subtotal</span>
+                            <span id="subtotal" class="font-medium">€0.00</span>
+                        </div>
+                        <div id="discountRow" class="hidden flex justify-between text-sm text-green-600">
+                            <span>Discount</span>
+                            <span id="discountAmount">-€0.00</span>
+                        </div>
+                        <div id="pointsDiscountRow" class="hidden flex justify-between text-sm text-green-600">
+                            <span>Points (<span id="pointsUsedLabel">0</span>)</span>
+                            <span id="pointsDiscountAmount">-€0.00</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-bold pt-2 border-t border-loyalty-primary/10">
+                            <span>Total</span>
+                            <span id="totalAmount">€0.00</span>
+                        </div>
+                        
+                        <div id="pointsEarnPreview" class="hidden bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                            <div class="text-green-600 text-xs">Customer earns</div>
+                            <div class="text-green-700 text-xl font-bold">+<span id="pointsToEarn">0</span> pts</div>
+                        </div>
+                        
+                        <div id="redeemSection" class="hidden bg-white rounded-lg p-3 border border-loyalty-primary/10">
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-loyalty-text/70">Redeem points</span>
+                                <span id="redeemValue" class="text-green-600 font-medium">0 = €0.00</span>
+                            </div>
+                            <input type="range" id="redeemSlider" class="w-full" min="0" max="0" value="0" oninput="updateRedeemValue()">
+                        </div>
+                        
+                        <button id="payBtn" onclick="processPayment()" disabled class="w-full loyalty-gradient text-white px-4 py-3 rounded-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all">
+                            Process Payment
+                        </button>
+                        <button onclick="clearCart()" class="w-full border-2 border-loyalty-primary/30 text-loyalty-text px-4 py-2 rounded-full font-medium text-sm hover:bg-loyalty-light-bg transition-colors">
+                            Clear Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../dist/index.umd.js"></script>
+    <script>
+        let sdk = null;
+        let currentCustomer = null;
+        let currentCard = null;
+        let cart = [];
+        let appliedOffer = null;
+        let pointsToRedeem = 0;
+        let qrSession = null;
+        let ablyClient = null;
+        let ablyChannel = null;
+        
+        const POINTS_TO_EUR = 0.01;
+        const EUR_TO_POINTS = 10;
+        
+        const DEMO_PRODUCTS = [
+            { id: 1, name: 'Espresso', price: 2.50, emoji: '☕' },
+            { id: 2, name: 'Cappuccino', price: 3.50, emoji: '☕' },
+            { id: 3, name: 'Latte', price: 4.00, emoji: '🥛' },
+            { id: 4, name: 'Croissant', price: 2.80, emoji: '🥐' },
+            { id: 5, name: 'Muffin', price: 3.20, emoji: '🧁' },
+            { id: 6, name: 'Sandwich', price: 5.50, emoji: '🥪' },
+            { id: 7, name: 'Salad', price: 7.90, emoji: '🥗' },
+            { id: 8, name: 'Juice', price: 3.00, emoji: '🧃' },
+            { id: 9, name: 'Water', price: 1.50, emoji: '💧' },
+            { id: 10, name: 'Cookie', price: 1.80, emoji: '🍪' },
+        ];
+        
+        function initProducts() {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = DEMO_PRODUCTS.map(p => `
+                <button onclick="addToCart(${p.id})" class="bg-white rounded-xl p-3 text-center hover:shadow-md hover:scale-105 transition-all border-2 border-transparent hover:border-loyalty-primary">
+                    <div class="text-2xl mb-1">${p.emoji}</div>
+                    <div class="text-xs text-loyalty-heading font-medium truncate">${p.name}</div>
+                    <div class="text-xs text-loyalty-primary font-bold">€${p.price.toFixed(2)}</div>
+                </button>
+            `).join('');
+        }
+        
+        async function connectPOS() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            const apiSecret = document.getElementById('apiSecretInput').value.trim();
+            const errorEl = document.getElementById('loginError');
+            const btnText = document.getElementById('connectBtnText');
+            
+            if (!apiKey || !apiSecret) {
+                errorEl.textContent = 'Please enter API Key and API Secret';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            
+            btnText.innerHTML = '<span class="flex items-center justify-center gap-2"><span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Connecting...</span>';
+            errorEl.classList.add('hidden');
+            
+            try {
+                const SDK = window.LoyaltySDK?.LoyaltySDK || window.LoyaltySDK?.default || window.LoyaltySDK;
+                
+                if (!SDK) throw new Error('SDK not loaded');
+                
+                sdk = new SDK({
+                    apiKey: apiKey,
+                    apiSecret: apiSecret,
+                    environment: 'production',
+                    locale: 'lt'
+                });
+                
+                const validation = await sdk.validateCredentials();
+                
+                document.getElementById('shopName').textContent = validation.partner_name;
+                document.getElementById('connectionStatus').className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700';
+                document.getElementById('connectionStatus').textContent = '● Connected';
+                
+                const shops = await sdk.getShops();
+                if (shops.data && shops.data.length > 0) {
+                    document.getElementById('shopAddress').textContent = shops.data[0].address || shops.data[0].phone || '';
+                }
+                
+                document.getElementById('loginScreen').classList.add('hidden');
+                initProducts();
+                generateQR();
+                
+            } catch (error) {
+                console.error('Connection error:', error);
+                errorEl.textContent = error.message || 'Connection failed';
+                errorEl.classList.remove('hidden');
+                btnText.textContent = 'Connect';
+            }
+        }
+        
+        async function generateQR() {
+            if (!sdk) return;
+            
+            try {
+                document.getElementById('qrStatus').textContent = 'QR: Generating...';
+                document.getElementById('qrStatus').className = 'px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700';
+                
+                qrSession = await sdk.generateQrCardSession('POS Terminal');
+                
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrSession.qr_code)}`;
+                document.getElementById('cdQrImage').src = qrUrl;
+                
+                document.getElementById('qrStatus').textContent = 'QR: Active';
+                document.getElementById('qrStatus').className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700';
+                
+                await subscribeToQrEvents(qrSession.session_id);
+                
+            } catch (error) {
+                console.error('QR generation error:', error);
+                document.getElementById('qrStatus').textContent = 'QR: Error';
+                document.getElementById('qrStatus').className = 'px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700';
+                setTimeout(generateQR, 5000);
+            }
+        }
+        
+        async function subscribeToQrEvents(sessionId) {
+            try {
+                if (ablyChannel) ablyChannel.unsubscribe();
+                if (ablyClient) ablyClient.close();
+                
+                const tokenResponse = await sdk.getAblyToken(sessionId);
+                
+                ablyClient = new Ably.Realtime({ token: tokenResponse.token });
+                ablyChannel = ablyClient.channels.get(tokenResponse.channel);
+                
+                ablyChannel.subscribe('card_identified', (message) => {
+                    handleCardIdentified(message.data);
+                });
+                
+            } catch (error) {
+                console.error('Ably error:', error);
+                startPolling(sessionId);
+            }
+        }
+        
+        function startPolling(sessionId) {
+            const interval = setInterval(async () => {
+                try {
+                    const status = await sdk.pollQrCardStatus(sessionId);
+                    if (status.status === 'completed' && status.card_data) {
+                        clearInterval(interval);
+                        handleCardIdentified(status.card_data);
+                    } else if (status.status === 'expired') {
+                        clearInterval(interval);
+                        generateQR();
+                    }
+                } catch (e) {}
+            }, 2000);
+            
+            setTimeout(() => clearInterval(interval), 300000);
+        }
+        
+        function handleCardIdentified(cardData) {
+            currentCard = cardData;
+            currentCustomer = {
+                name: cardData.user?.name || cardData.user?.phone || 'Customer',
+                phone: cardData.user?.phone || '',
+                points: cardData.points_balance || 0
+            };
+            
+            document.getElementById('noCustomer').classList.add('hidden');
+            document.getElementById('customerCard').classList.remove('hidden');
+            document.getElementById('customerName').textContent = currentCustomer.name;
+            document.getElementById('customerPhone').textContent = currentCustomer.phone;
+            document.getElementById('customerPoints').textContent = currentCustomer.points.toLocaleString();
+            document.getElementById('pointsWorth').textContent = '€' + (currentCustomer.points * POINTS_TO_EUR).toFixed(2);
+            
+            document.getElementById('customerStatus').textContent = '✓ ' + currentCustomer.name;
+            document.getElementById('customerStatus').className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700';
+            
+            document.getElementById('redeemSlider').max = currentCustomer.points;
+            document.getElementById('redeemSlider').value = 0;
+            
+            document.getElementById('cdScanView').classList.add('hidden');
+            document.getElementById('cdCustomerView').classList.remove('hidden');
+            document.getElementById('cdCustomerName').textContent = currentCustomer.name;
+            document.getElementById('cdCustomerPoints').textContent = currentCustomer.points.toLocaleString();
+            
+            updateCart();
+        }
+        
+        function showCustomerTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+                btn.className = 'tab-btn flex-1 px-3 py-2 text-xs font-medium rounded-lg ' + 
+                    ((i === 0 && tab === 'lookup') || (i === 1 && tab === 'sendlink') 
+                        ? 'bg-loyalty-primary text-white' 
+                        : 'bg-white text-loyalty-text border border-loyalty-primary/20');
+            });
+            document.getElementById('lookupTab').classList.toggle('hidden', tab !== 'lookup');
+            document.getElementById('sendlinkTab').classList.toggle('hidden', tab !== 'sendlink');
+        }
+        
+        async function lookupCard() {
+            const cardNumber = document.getElementById('cardNumberInput').value.trim();
+            if (!cardNumber) return alert('Enter card number');
+            
+            try {
+                const cards = await sdk.getLoyaltyCards({ card_number: cardNumber });
+                if (cards.data && cards.data.length > 0) {
+                    handleCardIdentified(cards.data[0]);
+                } else {
+                    alert('Card not found');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        async function sendAppLink() {
+            const phone = document.getElementById('phoneInput').value.trim();
+            if (!phone) return alert('Enter phone number');
+            
+            const btn = document.getElementById('sendLinkBtnText');
+            btn.innerHTML = '<span class="flex items-center gap-1"><span class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span></span>';
+            
+            try {
+                await sdk.sendAppLink(phone);
+                btn.textContent = '✓ Sent!';
+                setTimeout(() => { btn.textContent = '📱 Send'; }, 3000);
+            } catch (error) {
+                alert('Error: ' + error.message);
+                btn.textContent = '📱 Send';
+            }
+        }
+        
+        function addToCart(productId) {
+            const product = DEMO_PRODUCTS.find(p => p.id === productId);
+            if (!product) return;
+            
+            const existing = cart.find(item => item.id === productId);
+            if (existing) existing.qty++;
+            else cart.push({ ...product, qty: 1 });
+            
+            updateCart();
+        }
+        
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCart();
+        }
+        
+        function calculateSubtotal() { return cart.reduce((sum, item) => sum + (item.price * item.qty), 0); }
+        function calculateDiscount() { return appliedOffer ? (appliedOffer.percent ? calculateSubtotal() * appliedOffer.percent / 100 : appliedOffer.amount || 0) : 0; }
+        function calculatePointsDiscount() { return pointsToRedeem * POINTS_TO_EUR; }
+        function calculateTotal() { return Math.max(0, calculateSubtotal() - calculateDiscount() - calculatePointsDiscount()); }
+        function calculatePointsToEarn() { return Math.floor(calculateTotal() * EUR_TO_POINTS); }
+        
+        function updateRedeemValue() {
+            pointsToRedeem = parseInt(document.getElementById('redeemSlider').value);
+            document.getElementById('redeemValue').textContent = `${pointsToRedeem} = €${(pointsToRedeem * POINTS_TO_EUR).toFixed(2)}`;
+            updateCart();
+        }
+        
+        function updateCart() {
+            const cartEl = document.getElementById('cartItems');
+            
+            if (cart.length === 0) {
+                cartEl.innerHTML = '<p class="text-loyalty-text/50 text-sm text-center py-8">Cart is empty</p>';
+            } else {
+                cartEl.innerHTML = cart.map(item => `
+                    <div class="flex justify-between items-center py-2 border-b border-loyalty-primary/10">
+                        <div class="flex-1">
+                            <div class="text-sm font-medium text-loyalty-heading">${item.emoji} ${item.name}</div>
+                            <div class="text-xs text-loyalty-text/50">${item.qty} x €${item.price.toFixed(2)}</div>
+                        </div>
+                        <div class="text-sm font-semibold text-loyalty-heading">€${(item.price * item.qty).toFixed(2)}</div>
+                        <button onclick="removeFromCart(${item.id})" class="ml-2 text-red-500 hover:text-red-700 text-xs px-2">✕</button>
+                    </div>
+                `).join('');
+            }
+            
+            const subtotal = calculateSubtotal();
+            const discount = calculateDiscount();
+            const pointsDiscount = calculatePointsDiscount();
+            const total = calculateTotal();
+            const pointsToEarn = calculatePointsToEarn();
+            
+            document.getElementById('subtotal').textContent = '€' + subtotal.toFixed(2);
+            document.getElementById('totalAmount').textContent = '€' + total.toFixed(2);
+            
+            document.getElementById('discountRow').classList.toggle('hidden', discount <= 0);
+            document.getElementById('discountAmount').textContent = '-€' + discount.toFixed(2);
+            
+            document.getElementById('pointsDiscountRow').classList.toggle('hidden', pointsDiscount <= 0);
+            document.getElementById('pointsUsedLabel').textContent = pointsToRedeem;
+            document.getElementById('pointsDiscountAmount').textContent = '-€' + pointsDiscount.toFixed(2);
+            
+            const showCustomerFeatures = currentCustomer && cart.length > 0;
+            document.getElementById('pointsEarnPreview').classList.toggle('hidden', !showCustomerFeatures);
+            document.getElementById('redeemSection').classList.toggle('hidden', !showCustomerFeatures);
+            document.getElementById('pointsToEarn').textContent = pointsToEarn;
+            
+            document.getElementById('payBtn').disabled = cart.length === 0;
+            
+            document.getElementById('cdTotal').textContent = '€' + total.toFixed(2);
+            document.getElementById('cdPointsEarn').textContent = currentCustomer ? `You'll earn +${pointsToEarn} points` : '';
+        }
+        
+        async function processPayment() {
+            const btn = document.getElementById('payBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="flex items-center justify-center gap-2"><span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Processing...</span>';
+            
+            try {
+                const total = calculateTotal();
+                const pointsEarned = calculatePointsToEarn();
+                
+                await new Promise(r => setTimeout(r, 1500));
+                
+                document.getElementById('successMessage').textContent = 
+                    `Amount: €${total.toFixed(2)} ${currentCustomer ? '• ' + currentCustomer.name : ''}`;
+                document.getElementById('pointsEarned').textContent = 
+                    currentCustomer && pointsEarned > 0 ? `+${pointsEarned} points earned!` : '';
+                
+                document.getElementById('successModal').classList.remove('hidden');
+                
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Process Payment';
+            }
+        }
+        
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.add('hidden');
+            clearCart();
+            clearCustomer();
+        }
+        
+        function clearCart() {
+            cart = [];
+            appliedOffer = null;
+            pointsToRedeem = 0;
+            document.getElementById('redeemSlider').value = 0;
+            updateCart();
+        }
+        
+        function clearCustomer() {
+            currentCustomer = null;
+            currentCard = null;
+            
+            document.getElementById('noCustomer').classList.remove('hidden');
+            document.getElementById('customerCard').classList.add('hidden');
+            
+            document.getElementById('customerStatus').textContent = 'No customer';
+            document.getElementById('customerStatus').className = 'px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600';
+            
+            document.getElementById('redeemSlider').max = 0;
+            document.getElementById('redeemSlider').value = 0;
+            
+            document.getElementById('cdScanView').classList.remove('hidden');
+            document.getElementById('cdCustomerView').classList.add('hidden');
+            
+            updateCart();
+            generateQR();
+        }
+        
+        initProducts();
+    </script>
+</body>
+</html>

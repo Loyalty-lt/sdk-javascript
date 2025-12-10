@@ -1,0 +1,10 @@
+export { LoyaltySDK as default } from './LoyaltySDK';
+export { LoyaltySDK } from './LoyaltySDK';
+export { ConfigManager, DEFAULT_CONFIG, DEFAULT_ENVIRONMENTS } from './config';
+export type { LoyaltySDKConfig, Environment, EnvironmentConfig } from './config';
+export { WebSocketManager } from './websocket/WebSocketManager';
+export type { WebSocketMessage, WebSocketSubscription, QrLoginStatusMessage, QrCardIdentifiedMessage } from './websocket/WebSocketManager';
+export * from './types';
+export type { Shop, ShopFilters } from './types';
+export { LoyaltySDKError } from './types';
+export const SDK_VERSION = '2.2.0';

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Login - Loyalty.lt SDK Example</title>
+    
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.2/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ably@1.2.48/build/ably.min.js"></script>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts as fallback -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Satoshi', 'Inter', 'system-ui', 'sans-serif'],
+                        'display': ['Clash Display', 'Satoshi', 'sans-serif'],
+                        'heading': ['Clash Display', 'Satoshi', 'sans-serif'],
+                    },
+                    colors: {
+                        'loyalty-primary': '#29594B',
+                        'loyalty-heading': '#19352D',
+                        'loyalty-text': '#4B5563',
+                        'loyalty-accent': '#CFFF45',
+                        'loyalty-accent-dark': '#E6FD5A',
+                        'loyalty-light-bg': '#EDF1EE',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Satoshi Font Family */
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 300;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Light.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 400;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Regular.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 500;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Medium.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 600;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Bold.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            font-style: normal;
+            font-weight: 700;
+            src: url('https://partners.loyalty.lt/public/assets/satoshi/fonts/Satoshi-Bold.woff2') format('woff2');
+        }
+
+        /* Clash Display Font Family */
+        @font-face {
+            font-family: 'Clash Display';
+            font-style: normal;
+            font-weight: 400;
+            src: url('https://partners.loyalty.lt/public/assets/clash-display/fonts/ClashDisplay-Regular.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Clash Display';
+            font-style: normal;
+            font-weight: 500;
+            src: url('https://partners.loyalty.lt/public/assets/clash-display/fonts/ClashDisplay-Medium.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Clash Display';
+            font-style: normal;
+            font-weight: 600;
+            src: url('https://partners.loyalty.lt/public/assets/clash-display/fonts/ClashDisplay-Semibold.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Clash Display';
+            font-style: normal;
+            font-weight: 700;
+            src: url('https://partners.loyalty.lt/public/assets/clash-display/fonts/ClashDisplay-Bold.woff2') format('woff2');
+        }
+        
+        body {
+            font-family: 'Satoshi', 'Inter', system-ui, sans-serif;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Clash Display', 'Satoshi', sans-serif;
+        }
+        
+        .loyalty-gradient {
+            background: linear-gradient(135deg, #29594B 0%, #19352D 100%);
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-loyalty-light-bg flex flex-col">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-loyalty-primary/20 flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <a href="https://loyalty.lt" class="hover:opacity-80 transition-opacity">
+                    <img src="https://cdn.loyalty.lt/loyalty-public/logo/logo_light.png" alt="Loyalty.lt" class="h-10 w-auto">
+                </a>
+                <span class="text-sm text-loyalty-text/70">SDK Example: QR Login</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex items-center justify-center py-8 px-4">
+        <div class="max-w-md w-full">
+            
+            <!-- Configuration Section -->
+            <div id="configSection" class="bg-white rounded-xl shadow-xl border border-loyalty-primary/20 overflow-hidden">
+                <div class="loyalty-gradient p-6 text-center">
+                    <h2 class="text-2xl font-bold text-white">Partner API Configuration</h2>
+                    <p class="text-white/80 text-sm mt-2">Enter your API credentials to start</p>
+                </div>
+                
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-loyalty-text/70 mb-2">API Key</label>
+                        <input 
+                            type="text" 
+                            id="apiKeyInput" 
+                            placeholder="lty_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                            class="w-full px-4 py-3 border border-loyalty-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-loyalty-primary/50 text-loyalty-heading"
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-loyalty-text/70 mb-2">API Secret</label>
+                        <input 
+                            type="password" 
+                            id="apiSecretInput" 
+                            placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                            class="w-full px-4 py-3 border border-loyalty-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-loyalty-primary/50 text-loyalty-heading"
+                        >
+                    </div>
+                    <button 
+                        onclick="initializeSDK()" 
+                        class="w-full loyalty-gradient text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        Connect & Generate QR
+                    </button>
+                </div>
+            </div>
+            
+            <!-- QR Code Section -->
+            <div id="qrSection" class="hidden">
+                <div class="bg-white rounded-xl shadow-xl border border-loyalty-primary/20 overflow-hidden">
+                    <div class="p-8 text-center">
+                        <h2 class="text-2xl font-bold text-loyalty-heading mb-2">Login with QR Code</h2>
+                        <p class="text-loyalty-text/70 mb-6">Scan with your phone camera or Loyalty.lt app</p>
+                        
+                        <!-- QR Code -->
+                        <div class="bg-loyalty-light-bg rounded-xl p-6 mb-6 inline-block">
+                            <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <div id="qrPlaceholder" class="w-[200px] h-[200px] flex items-center justify-center bg-loyalty-light-bg rounded-lg">
+                                    <div class="w-10 h-10 border-4 border-loyalty-primary border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                                <img id="qrImage" src="" alt="QR Code" class="hidden w-[200px] h-[200px]">
+                            </div>
+                        </div>
+                        
+                        <!-- Status -->
+                        <div id="status" class="mb-4 px-6 py-3 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 inline-block">
+                            Generating QR code...
+                        </div>
+                        
+                        <!-- Timer -->
+                        <div id="timerSection" class="mb-6">
+                            <p class="text-loyalty-text/70 text-sm mb-2">Valid for: <span id="timerText" class="font-medium text-loyalty-heading">5:00</span></p>
+                            <div class="w-full h-1 bg-loyalty-light-bg rounded-full overflow-hidden">
+                                <div id="timerProgress" class="h-full bg-loyalty-primary transition-all duration-1000" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                        
+                        <button 
+                            onclick="regenerateQR()" 
+                            class="w-full border-2 border-loyalty-primary text-loyalty-primary px-6 py-3 rounded-full font-semibold hover:bg-loyalty-primary/5 transition-all duration-200"
+                        >
+                            Generate New Code
+                        </button>
+                        
+                        <div class="flex items-center my-6">
+                            <div class="flex-1 h-px bg-loyalty-primary/10"></div>
+                            <span class="px-4 text-sm text-loyalty-text/50">or</span>
+                            <div class="flex-1 h-px bg-loyalty-primary/10"></div>
+                        </div>
+                        
+                        <p class="text-sm text-loyalty-text/70">
+                            Don't have the app? 
+                            <a href="#" onclick="showSendLinkModal(); return false;" class="text-loyalty-primary font-medium hover:underline">
+                                Get download link
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Section (Success) -->
+            <div id="userSection" class="hidden">
+                <div class="bg-white rounded-xl shadow-xl border border-loyalty-primary/20 overflow-hidden">
+                    <div class="loyalty-gradient p-8 text-center">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-2">Login Successful!</h3>
+                    </div>
+                    
+                    <div class="p-6 space-y-4">
+                        <div class="flex justify-between items-center py-3 border-b border-loyalty-primary/10">
+                            <span class="text-loyalty-text/70">User</span>
+                            <span id="userName" class="font-medium text-loyalty-heading">-</span>
+                        </div>
+                        <div class="flex justify-between items-center py-3 border-b border-loyalty-primary/10">
+                            <span class="text-loyalty-text/70">Phone</span>
+                            <span id="userPhone" class="font-medium text-loyalty-heading">-</span>
+                        </div>
+                        <div class="py-3">
+                            <span class="block text-loyalty-text/70 mb-2">Token</span>
+                            <div id="userToken" class="font-mono text-xs bg-loyalty-light-bg p-3 rounded-lg break-all text-loyalty-text/70"></div>
+                        </div>
+                        
+                        <button 
+                            onclick="logout()" 
+                            class="w-full border-2 border-loyalty-primary text-loyalty-primary px-6 py-3 rounded-full font-semibold hover:bg-loyalty-primary/5 transition-all duration-200"
+                        >
+                            Logout & Start Over
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </main>
+
+    <!-- Send Link Modal -->
+    <div id="sendLinkModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeSendLinkModal()"></div>
+        <div class="relative flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6">
+                <h4 class="text-xl font-bold text-loyalty-heading mb-4">Get App Download Link</h4>
+                <input 
+                    type="tel" 
+                    id="phoneInput" 
+                    placeholder="+370 6XX XXXXX"
+                    class="w-full px-4 py-3 border border-loyalty-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-loyalty-primary/50 text-loyalty-heading mb-4"
+                >
+                <div class="flex gap-3">
+                    <button 
+                        onclick="closeSendLinkModal()" 
+                        class="flex-1 border-2 border-loyalty-primary/30 text-loyalty-text px-4 py-3 rounded-full font-medium hover:bg-loyalty-light-bg transition-all"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        id="sendLinkBtn"
+                        onclick="sendAppLink()" 
+                        class="flex-1 loyalty-gradient text-white px-4 py-3 rounded-full font-semibold hover:shadow-lg transition-all"
+                    >
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-loyalty-primary/10 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-sm text-loyalty-text/70">© 2024-2025 Loyalty.lt • SDK Example</p>
+                <div class="flex items-center gap-4">
+                    <a href="https://docs.loyalty.lt" target="_blank" class="text-sm text-loyalty-primary hover:underline">Documentation</a>
+                    <a href="https://github.com/loyaltylt" target="_blank" class="text-sm text-loyalty-primary hover:underline">GitHub</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../dist/index.umd.js"></script>
+    <script>
+        let sdk = null;
+        let qrSession = null;
+        let ablyClient = null;
+        let ablyChannel = null;
+        let timerInterval = null;
+        
+        const QR_DURATION = 5 * 60 * 1000;
+        
+        function initializeSDK() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            const apiSecret = document.getElementById('apiSecretInput').value.trim();
+            
+            if (!apiKey || !apiSecret) {
+                alert('Please enter API Key and API Secret');
+                return;
+            }
+            
+            try {
+                const SDK = window.LoyaltySDK?.LoyaltySDK || window.LoyaltySDK?.default || window.LoyaltySDK;
+                sdk = new SDK({
+                    apiKey: apiKey,
+                    apiSecret: apiSecret,
+                    environment: 'production',
+                    locale: 'lt'
+                });
+                
+                document.getElementById('configSection').classList.add('hidden');
+                document.getElementById('qrSection').classList.remove('hidden');
+                
+                generateQR();
+            } catch (error) {
+                alert('Failed to initialize SDK: ' + error.message);
+            }
+        }
+        
+        async function generateQR() {
+            if (!sdk) return;
+            
+            try {
+                updateStatus('pending', 'Generating QR code...');
+                document.getElementById('qrPlaceholder').classList.remove('hidden');
+                document.getElementById('qrImage').classList.add('hidden');
+                
+                qrSession = await sdk.generateQrLogin('Web Browser');
+                
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrSession.qr_code)}`;
+                
+                document.getElementById('qrImage').src = qrUrl;
+                document.getElementById('qrImage').classList.remove('hidden');
+                document.getElementById('qrPlaceholder').classList.add('hidden');
+                
+                updateStatus('pending', 'Waiting for scan...');
+                
+                startTimer();
+                await subscribeToEvents(qrSession.session_id);
+                
+            } catch (error) {
+                console.error('QR generation error:', error);
+                updateStatus('error', 'Failed to generate QR code');
+            }
+        }
+        
+        async function subscribeToEvents(sessionId) {
+            try {
+                if (ablyChannel) ablyChannel.unsubscribe();
+                if (ablyClient) ablyClient.close();
+                
+                const tokenResponse = await sdk.getAblyToken(sessionId);
+                
+                ablyClient = new Ably.Realtime({ token: tokenResponse.token });
+                ablyChannel = ablyClient.channels.get(tokenResponse.channel);
+                
+                ablyChannel.subscribe('status_update', (message) => {
+                    const data = message.data;
+                    
+                    if (data.status === 'scanned') {
+                        updateStatus('scanned', 'QR scanned! Confirm on your phone...');
+                    } else if (data.status === 'authenticated') {
+                        updateStatus('authenticated', 'Login successful!');
+                        handleAuthenticated(data);
+                    } else if (data.status === 'cancelled' || data.status === 'failed') {
+                        updateStatus('error', data.status === 'cancelled' ? 'Login cancelled' : 'Login failed');
+                        setTimeout(regenerateQR, 2000);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Ably error:', error);
+                startPolling(sessionId);
+            }
+        }
+        
+        function startPolling(sessionId) {
+            const interval = setInterval(async () => {
+                try {
+                    const status = await sdk.pollQrLoginStatus(sessionId);
+                    if (status.status === 'authenticated' && status.token) {
+                        clearInterval(interval);
+                        handleAuthenticated(status);
+                    } else if (status.status === 'expired') {
+                        clearInterval(interval);
+                        regenerateQR();
+                    }
+                } catch (e) {}
+            }, 2000);
+            
+            setTimeout(() => clearInterval(interval), QR_DURATION);
+        }
+        
+        function handleAuthenticated(data) {
+            cleanup();
+            
+            document.getElementById('qrSection').classList.add('hidden');
+            document.getElementById('userSection').classList.remove('hidden');
+            
+            document.getElementById('userName').textContent = data.user?.name || 'User';
+            document.getElementById('userPhone').textContent = data.user?.phone || data.user?.email || '-';
+            document.getElementById('userToken').textContent = data.token ? data.token.substring(0, 50) + '...' : '-';
+        }
+        
+        function updateStatus(type, message) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            
+            statusEl.className = 'mb-4 px-6 py-3 rounded-full text-sm font-medium inline-block ';
+            if (type === 'pending') {
+                statusEl.className += 'bg-yellow-100 text-yellow-800';
+            } else if (type === 'scanned') {
+                statusEl.className += 'bg-blue-100 text-blue-800';
+            } else if (type === 'authenticated') {
+                statusEl.className += 'bg-green-100 text-green-800';
+            } else if (type === 'error') {
+                statusEl.className += 'bg-red-100 text-red-800';
+            }
+        }
+        
+        function startTimer() {
+            let remaining = QR_DURATION;
+            
+            const update = () => {
+                const mins = Math.floor(remaining / 60000);
+                const secs = Math.floor((remaining % 60000) / 1000);
+                document.getElementById('timerText').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                document.getElementById('timerProgress').style.width = `${(remaining / QR_DURATION) * 100}%`;
+                
+                if (remaining <= 0) {
+                    regenerateQR();
+                    return;
+                }
+                remaining -= 1000;
+            };
+            
+            update();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(update, 1000);
+        }
+        
+        function regenerateQR() {
+            cleanup();
+            generateQR();
+        }
+        
+        function cleanup() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            if (ablyChannel) {
+                ablyChannel.unsubscribe();
+                ablyChannel = null;
+            }
+            if (ablyClient) {
+                ablyClient.close();
+                ablyClient = null;
+            }
+            qrSession = null;
+        }
+        
+        function logout() {
+            cleanup();
+            document.getElementById('userSection').classList.add('hidden');
+            document.getElementById('qrSection').classList.remove('hidden');
+            generateQR();
+        }
+        
+        function showSendLinkModal() {
+            document.getElementById('sendLinkModal').classList.remove('hidden');
+        }
+        
+        function closeSendLinkModal() {
+            document.getElementById('sendLinkModal').classList.add('hidden');
+            document.getElementById('phoneInput').value = '';
+        }
+        
+        async function sendAppLink() {
+            const phone = document.getElementById('phoneInput').value.trim();
+            if (!phone) {
+                alert('Please enter phone number');
+                return;
+            }
+            
+            const btn = document.getElementById('sendLinkBtn');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            
+            try {
+                await sdk.sendAppLink(phone);
+                alert('Download link sent to your phone!');
+                closeSendLinkModal();
+            } catch (error) {
+                alert('Failed to send link: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send';
+            }
+        }
+    </script>
+</body>
+</html>
