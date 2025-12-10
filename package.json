@@ -49,12 +49,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/loyalty-lt/sdk-javascript.git"
+    "url": "https://github.com/Loyalty-lt/sdk-javascript"
   },
   "bugs": {
-    "url": "https://github.com/loyalty-lt/sdk-javascript/issues"
+    "url": "https://github.com/Loyalty-lt/sdk-javascript/issues"
   },
-  "homepage": "https://github.com/loyalty-lt/sdk-javascript#readme",
+  "homepage": "https://github.com/Loyalty-lt/sdk-javascript#readme",
   "dependencies": {
     "ably": "^2.10.1",
     "axios": "^1.6.0"
