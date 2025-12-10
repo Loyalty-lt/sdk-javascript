@@ -45,7 +45,7 @@ export class LoyaltySDK {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Agent': 'LoyaltySDK/2.1.0',
+        'User-Agent': 'LoyaltySDK/1.0.0',
         ...(sdkConfig.apiKey && { 'X-API-Key': sdkConfig.apiKey }),
         ...(sdkConfig.apiSecret && { 'X-API-Secret': sdkConfig.apiSecret })
       }
@@ -300,7 +300,7 @@ export class LoyaltySDK {
   }
 
   getVersion(): string {
-    return '2.1.0';
+    return '1.0.0';
   }
 
   private async makeRequest<T = any>(
