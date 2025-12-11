@@ -7,4 +7,11 @@ export type { WebSocketMessage, WebSocketSubscription, QrLoginStatusMessage, QrC
 export * from './types';
 export type { Shop, ShopFilters } from './types';
 export { LoyaltySDKError } from './types';
-export const SDK_VERSION = '2.2.0';
+export {
+  calculateAmountFromPoints,
+  calculatePointsFromAmount,
+  validatePointsRedemption,
+  calculateFinalAmount,
+  calculateMaxRedeemablePoints
+} from './utils/pointsCalculator';
+export const SDK_VERSION = '1.0.0';

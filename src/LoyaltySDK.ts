@@ -94,9 +94,11 @@ export class LoyaltySDK {
     return await this.makeRequest('GET', '/shop/system/health');
   }
 
-  async getAblyToken(sessionId: string): Promise<AblyTokenResponse> {
+  async getAblyToken(sessionId: string, options?: { user_id?: number; shopping_session_id?: string }): Promise<AblyTokenResponse> {
     return await this.makeRequest<AblyTokenResponse>('POST', '/shop/ably/token', {
-      session_id: sessionId
+      session_id: sessionId,
+      ...(options?.user_id && { user_id: options.user_id }),
+      ...(options?.shopping_session_id && { shopping_session_id: options.shopping_session_id })
     });
   }
 
@@ -113,7 +115,14 @@ export class LoyaltySDK {
 
   async subscribeToQrLogin(sessionId: string, callback: (message: QrLoginStatusMessage) => void): Promise<WebSocketSubscription> {
     const tokenResponse = await this.getAblyToken(sessionId);
-    await this.webSocketManager.connectWithToken(tokenResponse.token);
+    
+    // Token refresh callback for automatic renewal
+    const tokenRefreshCallback = async (): Promise<string> => {
+      const newTokenResponse = await this.getAblyToken(sessionId);
+      return newTokenResponse.token;
+    };
+    
+    await this.webSocketManager.connectWithToken(tokenResponse.token, tokenRefreshCallback);
     return this.webSocketManager.subscribeToQrLogin(sessionId, callback);
   }
 
@@ -139,7 +148,14 @@ export class LoyaltySDK {
 
   async subscribeToQrCardScan(sessionId: string, callback: (cardData: QrCardScanData) => void): Promise<WebSocketSubscription> {
     const tokenResponse = await this.getAblyToken(sessionId);
-    await this.webSocketManager.connectWithToken(tokenResponse.token);
+    
+    // Token refresh callback for automatic renewal
+    const tokenRefreshCallback = async (): Promise<string> => {
+      const newTokenResponse = await this.getAblyToken(sessionId);
+      return newTokenResponse.token;
+    };
+    
+    await this.webSocketManager.connectWithToken(tokenResponse.token, tokenRefreshCallback);
     return this.webSocketManager.subscribeToQrCardScan(sessionId, (message: QrCardIdentifiedMessage) => {
       callback(message.data.card_data);
     });
@@ -190,26 +206,29 @@ export class LoyaltySDK {
   }
 
   async createTransaction(data: {
-    card_id?: number;
-    card_number?: string;
-    amount: number;
-    points_earned?: number;
-    points_redeemed?: number;
+    user_id?: number;
+    user_email?: string;
+    order_id: string;
+    order_total: number;
+    currency?: string;
     description?: string;
-    reference_id?: string;
     shop_id?: number;
+    loyalty_card_id?: number;
+    points?: number;
+    points_redeemed?: number;
+    points_discount_amount?: number;
+    cart_items?: Array<{
+      product_id?: number;
+      product_name?: string;
+      quantity?: number;
+      unit_price?: number;
+      total_price?: number;
+      sku?: string;
+      category?: string;
+    }>;
+    meta_data?: Record<string, any>;
   }): Promise<PointsTransaction> {
     return await this.makeRequest<PointsTransaction>('POST', '/shop/transactions/create', data);
-  }
-
-  async deductPoints(data: {
-    card_id?: number;
-    card_number?: string;
-    points: number;
-    description?: string;
-    shop_id?: number;
-  }): Promise<PointsTransaction> {
-    return await this.makeRequest<PointsTransaction>('POST', '/shop/transactions/deduct-points', data);
   }
 
   async getTransactions(filters?: { page?: number; per_page?: number; shop_id?: number }): Promise<PaginatedResponse<PointsTransaction>> {
@@ -297,6 +316,34 @@ export class LoyaltySDK {
 
   disconnectWebSocket(): void {
     this.webSocketManager.disconnect();
+  }
+
+  /**
+   * Create an Ably Realtime client with automatic token renewal
+   * Use this for shopping sessions or other real-time features
+   * @param sessionId - The session ID for token generation
+   * @param options - Optional parameters for extended permissions
+   * @returns Ably client options with authCallback configured
+   */
+  async createAblyClientOptions(
+    sessionId: string, 
+    options?: { user_id?: number; shopping_session_id?: string }
+  ): Promise<{ token: string; authCallback: (tokenParams: any, callback: (err: Error | null, token: string | null) => void) => void }> {
+    const tokenResponse = await this.getAblyToken(sessionId, options);
+    
+    const authCallback = async (tokenParams: any, callback: (err: Error | null, token: string | null) => void) => {
+      try {
+        const newTokenResponse = await this.getAblyToken(sessionId, options);
+        callback(null, newTokenResponse.token);
+      } catch (err) {
+        callback(err as Error, null);
+      }
+    };
+    
+    return {
+      token: tokenResponse.token,
+      authCallback
+    };
   }
 
   getVersion(): string {

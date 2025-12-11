@@ -52,7 +52,7 @@ export interface WebSocketSubscription {
 }
 
 export interface AblyTokenProvider {
-  (sessionId: string): Promise<{ token: string; channel: string }>;
+  (): Promise<{ token: string; channel: string }>;
 }
 
 export class WebSocketManager {
@@ -69,15 +69,29 @@ export class WebSocketManager {
     this.tokenProvider = provider;
   }
 
-  async connectWithToken(token: string): Promise<void> {
+  async connectWithToken(token: string, tokenRefreshCallback?: () => Promise<string>): Promise<void> {
     if (this.ably) {
       this.ably.close();
     }
 
-    this.ably = new Ably.Realtime({
+    const ablyOptions: Ably.ClientOptions = {
       token: token,
       autoConnect: true
-    });
+    };
+
+    // Add authCallback for automatic token renewal
+    if (tokenRefreshCallback) {
+      ablyOptions.authCallback = async (tokenParams, callback) => {
+        try {
+          const newToken = await tokenRefreshCallback();
+          callback(null, newToken);
+        } catch (err: any) {
+          callback(err?.message || 'Token refresh failed', null);
+        }
+      };
+    }
+
+    this.ably = new Ably.Realtime(ablyOptions);
 
     return new Promise((resolve, reject) => {
       this.ably!.connection.on('connected', () => {

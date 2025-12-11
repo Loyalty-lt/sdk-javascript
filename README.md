@@ -150,16 +150,11 @@ await sdk.sendAppLink('+37061234567', 4, 'Customer Name', 'lt');
 
 ```javascript
 const transaction = await sdk.createTransaction({
-  card_number: 'LT123456',
+  card_number: '123-456-789',
   amount: 50.00,
   points_earned: 50
 });
 
-await sdk.deductPoints({
-  card_number: 'LT123456',
-  points: 100,
-  description: 'Discount applied'
-});
 ```
 
 ## Loyalty Cards
@@ -167,9 +162,9 @@ await sdk.deductPoints({
 ```javascript
 const cards = await sdk.getLoyaltyCards({ page: 1, per_page: 10 });
 
-const card = await sdk.getLoyaltyCardInfo({ card_number: 'LT123456' });
+const card = await sdk.getLoyaltyCardInfo({ card_number: '123-456-789' });
 
-const balance = await sdk.getPointsBalance({ card_number: 'LT123456' });
+const balance = await sdk.getPointsBalance({ card_number: '123-456-789' });
 ```
 
 ## Offers

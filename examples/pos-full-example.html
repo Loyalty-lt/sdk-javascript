@@ -209,8 +209,14 @@
             <div id="cdScanView" class="flex flex-col items-center">
                 <h2 class="text-4xl font-bold text-white mb-8">Welcome!</h2>
                 
-                <div class="bg-white p-6 rounded-2xl shadow-2xl mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-2xl mb-8 relative">
                     <img id="cdQrImage" class="w-64 h-64" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Crect fill='%23EDF1EE' width='256' height='256'/%3E%3Ctext x='128' y='128' text-anchor='middle' fill='%2329594B' font-size='14'%3EConnecting...%3C/text%3E%3C/svg%3E" alt="QR Code">
+                    <div id="qrScanOverlay" class="hidden absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="w-12 h-12 border-4 border-loyalty-primary border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                            <div class="text-loyalty-primary font-medium">Identifying...</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <h3 class="text-2xl text-white font-medium mb-2">Scan with Loyalty.lt app</h3>
@@ -228,7 +234,8 @@
                 
                 <div class="bg-white/10 backdrop-blur rounded-2xl p-8 mb-6 min-w-[320px]">
                     <div id="cdCustomerName" class="text-3xl font-bold text-white mb-2">-</div>
-                    <div class="text-white/60 text-sm mb-4">Your Points</div>
+                    <div id="cdCardNumber" class="text-white/50 text-sm font-mono mb-4">-</div>
+                    <div class="text-white/60 text-sm mb-2">Your Points</div>
                     <div id="cdCustomerPoints" class="text-6xl font-bold text-loyalty-accent">0</div>
                 </div>
                 
@@ -282,7 +289,7 @@
                         </div>
                         
                         <div id="customerCard" class="hidden loyalty-gradient rounded-xl p-4 text-white">
-                            <div class="flex justify-between items-start mb-3">
+                            <div class="flex justify-between items-start mb-2">
                                 <div>
                                     <div id="customerName" class="text-lg font-semibold">-</div>
                                     <div id="customerPhone" class="text-white/70 text-sm">-</div>
@@ -290,6 +297,10 @@
                                 <button onclick="clearCustomer()" class="text-white/70 hover:text-white text-xs px-2 py-1 bg-white/10 rounded-full">
                                     Clear
                                 </button>
+                            </div>
+                            <div class="bg-white/10 rounded-lg px-3 py-2 mb-3">
+                                <div class="text-white/60 text-xs">Card Number</div>
+                                <div id="customerCardNumber" class="text-sm font-mono font-medium tracking-wider">-</div>
                             </div>
                             <div class="flex justify-between items-end">
                                 <div>
@@ -391,9 +402,13 @@
         let qrSession = null;
         let ablyClient = null;
         let ablyChannel = null;
+        let sessionChannel = null;
+        let shoppingSessionId = null;
+        let pointsRules = null;
         
-        const POINTS_TO_EUR = 0.01;
-        const EUR_TO_POINTS = 10;
+        // Default values, will be overridden by pointsRules from backend
+        const DEFAULT_POINTS_TO_EUR = 0.01;
+        const DEFAULT_EUR_TO_POINTS = 10;
         
         const DEMO_PRODUCTS = [
             { id: 1, name: 'Espresso', price: 2.50, emoji: '☕' },
@@ -473,6 +488,8 @@
             if (!sdk) return;
             
             try {
+                // Hide scan overlay when generating new QR
+                document.getElementById('qrScanOverlay').classList.add('hidden');
                 document.getElementById('qrStatus').textContent = 'QR: Generating...';
                 document.getElementById('qrStatus').className = 'px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700';
                 
@@ -499,13 +516,19 @@
                 if (ablyChannel) ablyChannel.unsubscribe();
                 if (ablyClient) ablyClient.close();
                 
-                const tokenResponse = await sdk.getAblyToken(sessionId);
+                const ablyOptions = await sdk.createAblyClientOptions(sessionId);
+                ablyClient = new Ably.Realtime(ablyOptions);
                 
-                ablyClient = new Ably.Realtime({ token: tokenResponse.token });
+                const tokenResponse = await sdk.getAblyToken(sessionId);
                 ablyChannel = ablyClient.channels.get(tokenResponse.channel);
                 
                 ablyChannel.subscribe('card_identified', (message) => {
-                    handleCardIdentified(message.data);
+                    console.log('[POS] card_identified received:', message.data);
+                    // Show blur overlay on QR
+                    document.getElementById('qrScanOverlay').classList.remove('hidden');
+                    // Backend sends { session_id, status, card_data: {...}, timestamp }
+                    const cardData = message.data.card_data || message.data;
+                    handleCardIdentified(cardData);
                 });
                 
             } catch (error) {
@@ -520,6 +543,8 @@
                     const status = await sdk.pollQrCardStatus(sessionId);
                     if (status.status === 'completed' && status.card_data) {
                         clearInterval(interval);
+                        // Show blur overlay on QR
+                        document.getElementById('qrScanOverlay').classList.remove('hidden');
                         handleCardIdentified(status.card_data);
                     } else if (status.status === 'expired') {
                         clearInterval(interval);
@@ -531,33 +556,296 @@
             setTimeout(() => clearInterval(interval), 300000);
         }
         
-        function handleCardIdentified(cardData) {
-            currentCard = cardData;
+        async function handleCardIdentified(cardData) {
+            console.log('[POS] Processing card data:', cardData);
+            
+            // Backend sends: { loyalty_card_id, card_number, points, user: { id, name, phone }, redemption }
+            currentCard = {
+                id: cardData.loyalty_card_id || cardData.id,
+                card_number: cardData.card_number,
+                points: cardData.points || cardData.points_balance || 0
+            };
+            
             currentCustomer = {
+                id: cardData.user?.id || cardData.user_id,
                 name: cardData.user?.name || cardData.user?.phone || 'Customer',
                 phone: cardData.user?.phone || '',
-                points: cardData.points_balance || 0
+                points: cardData.points || cardData.points_balance || 0
             };
+            
+            // Store points rules if available (backend sends as 'redemption')
+            pointsRules = cardData.redemption || cardData.points_rules || null;
             
             document.getElementById('noCustomer').classList.add('hidden');
             document.getElementById('customerCard').classList.remove('hidden');
             document.getElementById('customerName').textContent = currentCustomer.name;
             document.getElementById('customerPhone').textContent = currentCustomer.phone;
+            document.getElementById('customerCardNumber').textContent = currentCard.card_number || '-';
             document.getElementById('customerPoints').textContent = currentCustomer.points.toLocaleString();
-            document.getElementById('pointsWorth').textContent = '€' + (currentCustomer.points * POINTS_TO_EUR).toFixed(2);
+            document.getElementById('pointsWorth').textContent = '€' + calculatePointsValue(currentCustomer.points).toFixed(2);
             
             document.getElementById('customerStatus').textContent = '✓ ' + currentCustomer.name;
             document.getElementById('customerStatus').className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700';
             
+            // Slider max will be set in updateCart based on subtotal
             document.getElementById('redeemSlider').max = currentCustomer.points;
             document.getElementById('redeemSlider').value = 0;
             
             document.getElementById('cdScanView').classList.add('hidden');
             document.getElementById('cdCustomerView').classList.remove('hidden');
             document.getElementById('cdCustomerName').textContent = currentCustomer.name;
+            document.getElementById('cdCardNumber').textContent = currentCard.card_number || '';
             document.getElementById('cdCustomerPoints').textContent = currentCustomer.points.toLocaleString();
             
+            // Start shopping session
+            await startShoppingSession(cardData);
+            
             updateCart();
+        }
+        
+        async function startShoppingSession(cardData) {
+            if (!currentCustomer?.id || !qrSession) return;
+            
+            try {
+                // Generate unique session ID
+                shoppingSessionId = `session_${Date.now()}_${currentCard.id}`;
+                console.log('[POS] Starting shopping session:', shoppingSessionId);
+                
+                // Get Ably client options with automatic token renewal
+                const ablyOptions = await sdk.createAblyClientOptions(qrSession.session_id, {
+                    user_id: currentCustomer.id,
+                    shopping_session_id: shoppingSessionId
+                });
+                
+                // Reconnect Ably with new token
+                if (ablyClient) ablyClient.close();
+                ablyClient = new Ably.Realtime(ablyOptions);
+                
+                // Subscribe to session channel for customer updates
+                sessionChannel = ablyClient.channels.get(`session-${shoppingSessionId}`);
+                sessionChannel.subscribe('session_update', (message) => {
+                    handleSessionUpdate(message.data);
+                });
+                
+                // Get shop info
+                const shopName = document.getElementById('shopName').textContent;
+                const shopAddress = document.getElementById('shopAddress').textContent;
+                
+                // Publish session_created to user's channel
+                const userChannel = ablyClient.channels.get(`user-${currentCustomer.id}`);
+                const sessionData = {
+                    sessionId: shoppingSessionId,
+                    cardId: currentCard.id,
+                    shopId: qrSession.shop_id || 1,
+                    staffId: 1,
+                    customerId: currentCustomer.id,
+                    status: 'editing',
+                    customerInfo: {
+                        name: currentCustomer.name,
+                        availablePoints: currentCustomer.points,
+                        cardNumber: currentCard.card_number || ''
+                    },
+                    staffInfo: {
+                        id: 1,
+                        name: 'POS Terminal'
+                    },
+                    shopInfo: {
+                        id: qrSession.shop_id || '1',
+                        name: shopName,
+                        address: shopAddress,
+                        logo: null
+                    },
+                    pointsRules: pointsRules || {
+                        points_per_currency: DEFAULT_EUR_TO_POINTS,
+                        currency_amount: 1,
+                        points_redemption_enabled: true,
+                        points_per_currency_redemption: 100,
+                        currency_amount_redemption: 1,
+                        min_points_for_redemption: 100,
+                        max_points_per_redemption: 10000
+                    },
+                    purchaseAmount: '',
+                    pointsToRedeem: '',
+                    customerPointsInput: '',
+                    description: '',
+                    calculatedPoints: 0,
+                    paymentMethod: null,
+                    lastUpdatedBy: 'staff',
+                    timestamp: new Date().toISOString()
+                };
+                
+                await userChannel.publish('session_created', sessionData);
+                console.log('[POS] session_created sent to user-' + currentCustomer.id);
+                
+            } catch (error) {
+                console.error('[POS] Error starting shopping session:', error);
+            }
+        }
+        
+        function handleSessionUpdate(data) {
+            console.log('[POS] Received session_update:', data);
+            
+            // Customer updated points to redeem
+            if (data.lastUpdatedBy === 'customer' && data.customerPointsInput !== undefined) {
+                let customerPoints = parseInt(data.customerPointsInput) || 0;
+                
+                // Validate: can't redeem more points than purchase amount allows
+                const subtotal = calculateSubtotal();
+                const maxPointsForAmount = calculateMaxPointsForAmount(subtotal);
+                const maxRedeemable = Math.min(currentCustomer?.points || 0, maxPointsForAmount);
+                
+                if (customerPoints > maxRedeemable) {
+                    customerPoints = maxRedeemable;
+                    console.log('[POS] Customer points capped to max redeemable:', maxRedeemable);
+                }
+                
+                document.getElementById('redeemSlider').value = customerPoints;
+                pointsToRedeem = customerPoints;
+                document.getElementById('redeemValue').textContent = `${pointsToRedeem} = €${calculatePointsValue(pointsToRedeem).toFixed(2)}`;
+                updateCart();
+                console.log('[POS] Customer set points to redeem:', customerPoints);
+            }
+            
+            // Customer selected payment method / requested payment
+            if (data.paymentMethod || data.status === 'processing') {
+                console.log('[POS] Customer requested payment:', data.paymentMethod);
+                showPaymentRequest(data);
+            }
+        }
+        
+        function showPaymentRequest(data) {
+            const paymentMethod = data.paymentMethod || 'unknown';
+            const methodText = paymentMethod === 'app_payment' ? 'App Payment' : 
+                               paymentMethod === 'cash' ? 'Cash Payment' : paymentMethod;
+            
+            // Play notification sound (optional)
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleVEgQqDNwJsV');
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+            } catch (e) {}
+            
+            // Show notification on POS
+            const notification = document.createElement('div');
+            notification.id = 'paymentNotification';
+            notification.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-8 py-5 rounded-2xl shadow-2xl z-50';
+            notification.innerHTML = `
+                <div class="flex flex-col items-center gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-bold text-xl">Customer Requests Payment!</div>
+                            <div class="text-sm opacity-90">Method: ${methodText} • Total: €${calculateTotal().toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <button onclick="processPaymentFromNotification()" class="mt-2 bg-white text-green-600 px-6 py-2 rounded-full font-bold hover:bg-green-50 transition-all">
+                        Complete Payment Now
+                    </button>
+                </div>
+            `;
+            
+            // Remove existing notification if any
+            const existing = document.getElementById('paymentNotification');
+            if (existing) existing.remove();
+            
+            document.body.appendChild(notification);
+            
+            // Update customer display to show payment pending
+            updateCustomerDisplayPayment(methodText);
+            
+            // Enable pay button and change its text
+            const payBtn = document.getElementById('payBtn');
+            if (payBtn && cart.length > 0) {
+                payBtn.disabled = false;
+                payBtn.innerHTML = '<span class="animate-pulse">Complete Payment</span>';
+                payBtn.classList.add('ring-2', 'ring-green-400', 'ring-offset-2');
+            }
+        }
+        
+        function processPaymentFromNotification() {
+            // Remove notification
+            const notification = document.getElementById('paymentNotification');
+            if (notification) notification.remove();
+            
+            // Process the payment
+            processPayment();
+        }
+        
+        function updateCustomerDisplayPayment(methodText) {
+            const customerDisplayContent = document.getElementById('customerDisplayContent');
+            if (!customerDisplayContent) return;
+            
+            customerDisplayContent.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                        <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-loyalty-text mb-2">Payment Requested</h3>
+                    <p class="text-loyalty-text/70 mb-4">Method: ${methodText}</p>
+                    <div class="bg-loyalty-primary/10 rounded-xl p-4 max-w-xs mx-auto">
+                        <p class="text-loyalty-text font-medium">Total: €${calculateTotal().toFixed(2)}</p>
+                        ${pointsToRedeem > 0 ? `<p class="text-sm text-loyalty-text/70">Points discount: €${calculatePointsDiscount().toFixed(2)}</p>` : ''}
+                    </div>
+                    <p class="text-sm text-loyalty-text/50 mt-4">Waiting for staff to complete payment...</p>
+                </div>
+            `;
+        }
+        
+        function updateCustomerDisplaySuccess(total, pointsEarned, pointsDiscount) {
+            const customerDisplayContent = document.getElementById('customerDisplayContent');
+            if (!customerDisplayContent) return;
+            
+            customerDisplayContent.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-14 h-14 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-3xl font-bold text-green-600 mb-2">Payment Complete!</h3>
+                    <p class="text-loyalty-text/70 mb-6">Thank you for your purchase</p>
+                    <div class="bg-loyalty-primary/10 rounded-xl p-6 max-w-xs mx-auto">
+                        <p class="text-2xl font-bold text-loyalty-text mb-2">€${total.toFixed(2)}</p>
+                        ${pointsDiscount > 0 ? `<p class="text-sm text-loyalty-text/70 mb-2">Points discount: -€${pointsDiscount.toFixed(2)}</p>` : ''}
+                        ${pointsEarned > 0 ? `<p class="text-loyalty-primary font-bold text-lg">+${pointsEarned} points earned!</p>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function sendSessionUpdate() {
+            if (!sessionChannel || !shoppingSessionId) return;
+            
+            const subtotal = calculateSubtotal();
+            const pointsDiscount = calculatePointsDiscount();
+            const total = calculateTotal();
+            const pointsToEarn = calculatePointsToEarn();
+            
+            const updateData = {
+                sessionId: shoppingSessionId,
+                purchaseAmount: total.toFixed(2),
+                subtotal: subtotal.toFixed(2),
+                pointsToEarn: pointsToEarn,
+                pointsToRedeem: pointsToRedeem.toString(),
+                pointsDiscountAmount: pointsDiscount.toFixed(2),
+                calculatedPoints: pointsToEarn,
+                status: total > 0 ? 'editing' : 'editing',
+                lastUpdatedBy: 'staff',
+                timestamp: new Date().toISOString()
+            };
+            
+            try {
+                await sessionChannel.publish('session_update', updateData);
+                console.log('[POS] session_update sent:', updateData);
+            } catch (error) {
+                console.error('[POS] Error sending session_update:', error);
+            }
         }
         
         function showCustomerTab(tab) {
@@ -595,7 +883,8 @@
             btn.innerHTML = '<span class="flex items-center gap-1"><span class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span></span>';
             
             try {
-                await sdk.sendAppLink(phone);
+                const shopId = qrSession?.shop_id || 1;
+                await sdk.sendAppLink(phone, shopId);
                 btn.textContent = '✓ Sent!';
                 setTimeout(() => { btn.textContent = '📱 Send'; }, 3000);
             } catch (error) {
@@ -622,13 +911,44 @@
         
         function calculateSubtotal() { return cart.reduce((sum, item) => sum + (item.price * item.qty), 0); }
         function calculateDiscount() { return appliedOffer ? (appliedOffer.percent ? calculateSubtotal() * appliedOffer.percent / 100 : appliedOffer.amount || 0) : 0; }
-        function calculatePointsDiscount() { return pointsToRedeem * POINTS_TO_EUR; }
+        
+        // Calculate currency value of points using pointsRules
+        function calculatePointsValue(points) {
+            if (!points || points <= 0) return 0;
+            if (!pointsRules) return points * DEFAULT_POINTS_TO_EUR;
+            const pointsPerCurrency = pointsRules.points_per_currency_redemption || pointsRules.points_per_currency || (1 / DEFAULT_POINTS_TO_EUR);
+            const currencyAmount = pointsRules.currency_amount_redemption || pointsRules.currency_amount || 1;
+            return Math.round((points / pointsPerCurrency) * currencyAmount * 100) / 100;
+        }
+        
+        // Calculate discount amount from points to redeem
+        function calculatePointsDiscount() {
+            return calculatePointsValue(pointsToRedeem);
+        }
+        
         function calculateTotal() { return Math.max(0, calculateSubtotal() - calculateDiscount() - calculatePointsDiscount()); }
-        function calculatePointsToEarn() { return Math.floor(calculateTotal() * EUR_TO_POINTS); }
+        
+        // Calculate points to earn using pointsRules
+        function calculatePointsToEarn() {
+            const total = calculateTotal();
+            if (!pointsRules || total <= 0) return Math.floor(total * DEFAULT_EUR_TO_POINTS);
+            const pointsPerCurrency = pointsRules.points_per_currency || DEFAULT_EUR_TO_POINTS;
+            const currencyAmount = pointsRules.currency_amount || 1;
+            return Math.floor((total / currencyAmount) * pointsPerCurrency);
+        }
+        
+        // Calculate max points that can be redeemed for given amount
+        function calculateMaxPointsForAmount(amount) {
+            if (!amount || amount <= 0) return 0;
+            if (!pointsRules) return Math.ceil(amount / DEFAULT_POINTS_TO_EUR);
+            const pointsPerCurrency = pointsRules.points_per_currency_redemption || pointsRules.points_per_currency || (1 / DEFAULT_POINTS_TO_EUR);
+            const currencyAmount = pointsRules.currency_amount_redemption || pointsRules.currency_amount || 1;
+            return Math.ceil((amount / currencyAmount) * pointsPerCurrency);
+        }
         
         function updateRedeemValue() {
             pointsToRedeem = parseInt(document.getElementById('redeemSlider').value);
-            document.getElementById('redeemValue').textContent = `${pointsToRedeem} = €${(pointsToRedeem * POINTS_TO_EUR).toFixed(2)}`;
+            document.getElementById('redeemValue').textContent = `${pointsToRedeem} = €${calculatePointsValue(pointsToRedeem).toFixed(2)}`;
             updateCart();
         }
         
@@ -671,10 +991,29 @@
             document.getElementById('redeemSection').classList.toggle('hidden', !showCustomerFeatures);
             document.getElementById('pointsToEarn').textContent = pointsToEarn;
             
+            // Update slider max based on subtotal - can't redeem more than purchase amount
+            if (currentCustomer) {
+                const maxPointsForAmount = calculateMaxPointsForAmount(subtotal);
+                const maxRedeemable = Math.min(currentCustomer.points, maxPointsForAmount);
+                const slider = document.getElementById('redeemSlider');
+                slider.max = maxRedeemable;
+                // If current value exceeds new max, reset it
+                if (pointsToRedeem > maxRedeemable) {
+                    pointsToRedeem = maxRedeemable;
+                    slider.value = maxRedeemable;
+                    document.getElementById('redeemValue').textContent = `${pointsToRedeem} = €${calculatePointsValue(pointsToRedeem).toFixed(2)}`;
+                }
+            }
+            
             document.getElementById('payBtn').disabled = cart.length === 0;
             
             document.getElementById('cdTotal').textContent = '€' + total.toFixed(2);
             document.getElementById('cdPointsEarn').textContent = currentCustomer ? `You'll earn +${pointsToEarn} points` : '';
+            
+            // Send session update to customer's app
+            if (currentCustomer && shoppingSessionId) {
+                sendSessionUpdate();
+            }
         }
         
         async function processPayment() {
@@ -683,30 +1022,110 @@
             btn.innerHTML = '<span class="flex items-center justify-center gap-2"><span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Processing...</span>';
             
             try {
+                const subtotal = calculateSubtotal();
                 const total = calculateTotal();
                 const pointsEarned = calculatePointsToEarn();
+                const pointsDiscount = calculatePointsDiscount();
                 
-                await new Promise(r => setTimeout(r, 1500));
+                // Create real transaction if customer is identified
+                if (currentCustomer && currentCard) {
+                    try {
+                        const orderId = `POS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                        const cartItems = cart.map(item => ({
+                            product_name: item.name,
+                            quantity: item.qty,
+                            unit_price: item.price,
+                            total_price: item.price * item.qty
+                        }));
+                        
+                        const transactionResult = await sdk.createTransaction({
+                            user_id: currentCustomer.id,
+                            order_id: orderId,
+                            order_total: subtotal,
+                            currency: 'EUR',
+                            loyalty_card_id: currentCard.id,
+                            points_redeemed: pointsToRedeem,
+                            points_discount_amount: pointsDiscount,
+                            description: `POS Purchase - ${cart.map(i => i.name).join(', ')}`,
+                            cart_items: cartItems
+                        });
+                        console.log('[POS] Transaction created:', transactionResult);
+                        
+                        // Send transaction_completed and session_ended to customer's app
+                        if (ablyClient && currentCustomer?.id) {
+                            const userChannel = ablyClient.channels.get(`user-${currentCustomer.id}`);
+                            
+                            // Send transaction_completed
+                            await userChannel.publish('transaction_completed', {
+                                transaction_id: transactionResult.id,
+                                card_id: currentCard.id,
+                                amount: subtotal,
+                                currency: 'EUR',
+                                points_awarded: pointsEarned,
+                                points_redeemed: pointsToRedeem,
+                                points_discount_amount: pointsDiscount,
+                                final_amount: total,
+                                timestamp: new Date().toISOString()
+                            });
+                            console.log('[POS] transaction_completed sent');
+                            
+                            // Send session_update with completed status
+                            if (sessionChannel) {
+                                await sessionChannel.publish('session_update', {
+                                    sessionId: shoppingSessionId,
+                                    status: 'completed',
+                                    lastUpdatedBy: 'staff',
+                                    timestamp: new Date().toISOString()
+                                });
+                            }
+                            
+                            // Send session_ended to close everything in the app
+                            await userChannel.publish('session_ended', {
+                                sessionId: shoppingSessionId,
+                                reason: 'payment_completed',
+                                transaction_id: transactionResult.id,
+                                points_awarded: pointsEarned,
+                                points_redeemed: pointsToRedeem,
+                                final_amount: total,
+                                timestamp: new Date().toISOString()
+                            });
+                            console.log('[POS] session_ended sent');
+                        }
+                    } catch (txError) {
+                        console.error('[POS] Transaction error:', txError);
+                    }
+                }
+                
+                await new Promise(r => setTimeout(r, 500));
                 
                 document.getElementById('successMessage').textContent = 
                     `Amount: €${total.toFixed(2)} ${currentCustomer ? '• ' + currentCustomer.name : ''}`;
                 document.getElementById('pointsEarned').textContent = 
                     currentCustomer && pointsEarned > 0 ? `+${pointsEarned} points earned!` : '';
                 
+                // Update customer display to show success
+                updateCustomerDisplaySuccess(total, pointsEarned, pointsDiscount);
+                
                 document.getElementById('successModal').classList.remove('hidden');
                 
             } catch (error) {
+                console.error('[POS] Payment error:', error);
                 alert('Error: ' + error.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Process Payment';
+                btn.classList.remove('ring-2', 'ring-green-400', 'ring-offset-2');
+                
+                // Remove payment notification if still visible
+                const notification = document.getElementById('paymentNotification');
+                if (notification) notification.remove();
             }
         }
         
-        function closeSuccessModal() {
+        async function closeSuccessModal() {
             document.getElementById('successModal').classList.add('hidden');
             clearCart();
-            clearCustomer();
+            await clearCustomer();
         }
         
         function clearCart() {
@@ -717,9 +1136,38 @@
             updateCart();
         }
         
-        function clearCustomer() {
+        async function clearCustomer() {
+            // Send session_ended to customer's app
+            if (ablyClient && currentCustomer?.id && shoppingSessionId) {
+                try {
+                    const userChannel = ablyClient.channels.get(`user-${currentCustomer.id}`);
+                    await userChannel.publish('session_ended', {
+                        sessionId: shoppingSessionId,
+                        reason: 'cleared',
+                        timestamp: new Date().toISOString()
+                    });
+                    console.log('[POS] session_ended sent');
+                } catch (error) {
+                    console.error('[POS] Error sending session_ended:', error);
+                }
+            }
+            
             currentCustomer = null;
             currentCard = null;
+            shoppingSessionId = null;
+            sessionChannel = null;
+            pointsRules = null;
+            
+            // Remove payment notification if visible
+            const notification = document.getElementById('paymentNotification');
+            if (notification) notification.remove();
+            
+            // Reset pay button styling
+            const payBtn = document.getElementById('payBtn');
+            if (payBtn) {
+                payBtn.classList.remove('ring-2', 'ring-green-400', 'ring-offset-2');
+                payBtn.textContent = 'Process Payment';
+            }
             
             document.getElementById('noCustomer').classList.remove('hidden');
             document.getElementById('customerCard').classList.add('hidden');
@@ -736,6 +1184,45 @@
             updateCart();
             generateQR();
         }
+        
+        // Cleanup on page unload - close all Ably sessions
+        function cleanupSessionSync(reason = 'page_closed') {
+            if (ablyClient && currentCustomer?.id && shoppingSessionId) {
+                try {
+                    const userChannel = ablyClient.channels.get(`user-${currentCustomer.id}`);
+                    // Fire and forget - don't await, just publish
+                    userChannel.publish('session_ended', {
+                        sessionId: shoppingSessionId,
+                        reason: reason,
+                        timestamp: new Date().toISOString()
+                    });
+                    console.log('[POS] session_ended queued:', reason);
+                } catch (error) {
+                    console.error('[POS] Error queueing session_ended:', error);
+                }
+            }
+            
+            if (ablyClient) {
+                try {
+                    // Close connection - Ably will try to flush pending messages
+                    ablyClient.close();
+                    console.log('[POS] Ably connection closing');
+                } catch (error) {
+                    console.error('[POS] Error closing Ably:', error);
+                }
+            }
+        }
+        
+        window.addEventListener('beforeunload', (event) => {
+            cleanupSessionSync('page_closed');
+        });
+        
+        window.addEventListener('pagehide', (event) => {
+            // More reliable on mobile browsers
+            if (!event.persisted) {
+                cleanupSessionSync('page_hide');
+            }
+        });
         
         initProducts();
     </script>

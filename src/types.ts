@@ -101,6 +101,7 @@ export interface AblyTokenResponse {
   expires: number;
   channel: string;
   session_type: 'login' | 'card_scan';
+  channels?: Record<string, string[]>;
 }
 
 // Loyalty Card Types
@@ -394,6 +395,141 @@ export interface QrCardIdentifiedMessage extends WebSocketMessage {
     timestamp: string;
   };
 }
+
+// Shopping Session Ably Events (Partner App Integration)
+// Channel: user-{userId}
+
+export interface ShopInfo {
+  id: number;
+  name: string;
+  address?: string;
+  logo?: string;
+}
+
+export interface StaffInfo {
+  id: number;
+  name: string;
+}
+
+export interface CustomerInfo {
+  id: number;
+  name: string;
+  phone?: string;
+  email?: string;
+  availablePoints: number;
+}
+
+export interface PointsRules {
+  // Earning rules
+  points_per_currency: number;
+  currency_amount: number;
+  // Redemption rules
+  points_redemption_enabled?: boolean;
+  points_per_currency_redemption?: number;
+  currency_amount_redemption?: number;
+  min_points_for_redemption?: number;
+  max_points_per_redemption?: number;
+}
+
+export interface SessionCreatedEvent {
+  sessionId: string;
+  cardId: number;
+  shopId: number;
+  shopInfo: ShopInfo;
+  staffId: number;
+  staffInfo: StaffInfo;
+  customerInfo?: CustomerInfo;
+  timestamp: string;
+}
+
+export interface SessionEndedEvent {
+  sessionId: string;
+  reason?: string;
+  timestamp: string;
+}
+
+export interface CardScannedEvent {
+  card_id: number;
+  shop_id: number;
+  shop_name: string;
+  shop_address?: string;
+  shop_logo?: string;
+  staff_id: number;
+  staff_name: string;
+  scanned_at: string;
+  session_ended?: boolean;
+}
+
+export interface PaymentRequestEvent {
+  purchase_id: number;
+  card_id: number;
+  shop_id: number;
+  shop_name: string;
+  shop_address?: string;
+  shop_logo?: string;
+  staff_id: number;
+  staff_name: string;
+  amount: number;
+  currency: string;
+  points_to_earn: number;
+  points_redeemed?: number;
+  points_discount_amount?: number;
+  final_amount: number;
+  description?: string;
+  timestamp: string;
+}
+
+export interface TransactionCompletedEvent {
+  transaction_id: number;
+  card_id: number;
+  amount: number;
+  currency: string;
+  points_awarded: number;
+  points_redeemed?: number;
+  points_discount_amount?: number;
+  final_amount: number;
+  timestamp: string;
+}
+
+// Channel: session-{sessionId}
+
+export type SessionStatus = 'editing' | 'ready_for_payment' | 'processing' | 'completed' | 'cancelled';
+export type PaymentMethod = 'cash' | 'card' | 'app_payment';
+export type LastUpdatedBy = 'staff' | 'customer';
+
+export interface SessionUpdateEvent {
+  sessionId: string;
+  status?: SessionStatus;
+  purchaseAmount?: string;
+  pointsToEarn?: number;
+  pointsToRedeem?: number;
+  calculatedPoints?: number;
+  customerPointsInput?: number;
+  pointsRules?: PointsRules;
+  customerInfo?: CustomerInfo;
+  paymentMethod?: PaymentMethod;
+  finalAmount?: number;
+  lastUpdatedBy: LastUpdatedBy;
+  timestamp: string;
+}
+
+// Ably Channel Names
+export type UserChannelName = `user-${number}`;
+export type SessionChannelName = `session-${string}`;
+export type QrLoginChannelName = `qr-login:${string}`;
+export type QrCardChannelName = `qr-card:${string}`;
+
+// Ably Event Types
+export type UserChannelEvents = 
+  | 'session_created'
+  | 'session_ended'
+  | 'card_scanned'
+  | 'payment_request'
+  | 'transaction_completed';
+
+export type SessionChannelEvents = 'session_update';
+export type QrLoginChannelEvents = 'status_update';
+export type QrCardChannelEvents = 'card_identified';
 
 // Filter Types
 export interface LoyaltyCardFilters {
