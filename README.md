@@ -1,6 +1,6 @@
 # Loyalty.lt JavaScript SDK
 
-Official JavaScript SDK for Loyalty.lt Partner API - integrate loyalty program functionality into POS systems and partner applications.
+Official JavaScript SDK for Loyalty.lt Shop API - integrate loyalty program functionality into POS systems and partner applications.
 
 ## Installation
 
