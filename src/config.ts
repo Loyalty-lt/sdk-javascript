@@ -44,13 +44,23 @@ export class ConfigManager {
                        DEFAULT_CONFIG.environment;
     const envDefaults = DEFAULT_ENVIRONMENTS[environment];
     
+    // Filter out undefined values to prevent them from overwriting defaults
+    const cleanEnvConfig = this.filterUndefined(envConfig);
+    const cleanUserConfig = this.filterUndefined(userConfig);
+    
     return {
       ...DEFAULT_CONFIG,
       ...envDefaults,
-      ...envConfig,
-      ...userConfig,
+      ...cleanEnvConfig,
+      ...cleanUserConfig,
       environment
     };
+  }
+  
+  private filterUndefined<T extends object>(obj: T): Partial<T> {
+    return Object.fromEntries(
+      Object.entries(obj).filter(([_, value]) => value !== undefined)
+    ) as Partial<T>;
   }
   
   private parseEnvironment(env: string | undefined): Environment | undefined {
@@ -62,8 +72,10 @@ export class ConfigManager {
   private getEnvironmentConfig(): { environment?: string; [key: string]: any } {
     const env = this.getEnvVars();
     
+    // Note: baseUrl is NOT configurable via env - it's always determined by environment
+    // production = https://api.loyalty.lt
+    // staging = https://staging-api.loyalty.lt
     return {
-      baseUrl: env.LOYALTY_API_URL,
       apiKey: env.LOYALTY_API_KEY,
       apiSecret: env.LOYALTY_API_SECRET,
       environment: env.LOYALTY_ENVIRONMENT,
@@ -140,7 +152,9 @@ export class ConfigManager {
   }
   
   public getApiUrl(): string {
-    const baseUrl = this.config.baseUrl || DEFAULT_CONFIG.baseUrl;
+    // Always use URL based on environment - not configurable
+    const environment = this.config.environment || DEFAULT_CONFIG.environment;
+    const baseUrl = DEFAULT_ENVIRONMENTS[environment].baseUrl;
     const locale = this.config.locale || DEFAULT_CONFIG.locale;
     return `${baseUrl}/${locale}`;
   }

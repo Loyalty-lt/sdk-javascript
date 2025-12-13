@@ -220,43 +220,226 @@ export interface Offer {
 // Coupons Types
 export interface Coupon {
   id: number;
-  user_id: number;
-  offer_id: number;
+  user_id?: number;
+  offer_id?: number;
+  game_id?: number;
   code: string;
-  status: 'active' | 'redeemed' | 'expired' | 'cancelled';
+  qr_code?: string;
+  status: 'active' | 'pending' | 'used' | 'expired' | 'cancelled';
+  is_used: boolean;
+  is_pending: boolean;
+  pending_at?: string;
+  pending_shop_id?: number;
+  pending_selected_product_id?: number;
+  used_at?: string;
   redeemed_at?: string;
   expires_at?: string;
+  expiry_time?: string;
   redemption_reference?: string;
-  meta_data: Record<string, any>;
+  product_ids?: number[];
+  category_ids?: number[];
+  requires_product_selection?: boolean;
+  meta_data?: Record<string, any>;
   created_at: string;
-  updated_at: string;
-  offer?: Offer;
+  updated_at?: string;
+  offer?: CouponOffer;
+  game?: CouponGame;
+  user?: CouponUser;
+  products?: CouponProduct[];
+  categories?: CouponCategory[];
+}
+
+export interface CouponOffer {
+  id: number;
+  title: string | Record<string, string>;
+  description?: string | Record<string, string>;
+  offer_type?: string;
+  discount_value?: number;
+  discount_type?: string;
+  discount_amount?: number;
+  minimum_purchase?: number;
+  reward_type?: string;
+  reward_details?: string;
+  reward_description?: string;
+  terms_conditions?: string;
+  original_price?: number;
+}
+
+export interface CouponGame {
+  id: number;
+  name: string | Record<string, string>;
+  title?: string | Record<string, string>;
+  description?: string | Record<string, string>;
+  type?: string;
+  game_type?: string;
+  reward_description?: string;
+  reward_details?: string;
+  image_path?: string;
+  is_active?: boolean;
+}
+
+export interface CouponUser {
+  id: number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  default_card_id?: number;
+  points_balance?: number;
+}
+
+export interface CouponProduct {
+  id: number;
+  name: string;
+  description?: string;
+  image_url?: string;
+  sku?: string;
+  barcode?: string;
+  price?: number;
+  regular_price?: number;
+  currency?: string;
+  categories?: CouponCategory[];
+}
+
+export interface CouponCategory {
+  id: number;
+  name: string;
+  description?: string;
+}
+
+export interface CouponVerifyResponse {
+  coupon: Coupon;
+  user?: CouponUser;
+  card?: {
+    id: number;
+    card_number: string;
+    user_id: number;
+    points_balance: number;
+  };
+  game?: CouponGame;
+  points_rules?: PointsRules;
+  games_count?: number;
+  coupons_count?: number;
+}
+
+export interface CouponRedeemResponse {
+  coupon_id: number;
+  redeemed_at: string;
+  shop_id: number;
+}
+
+export interface CouponPendingResponse {
+  coupon_id: number;
+  pending_at: string;
+  shop_id: number;
+  selected_product_id?: number;
+}
+
+export interface CouponDiscountCalculation {
+  can_apply: boolean;
+  reason?: string;
+  discount_amount: number;
+  final_amount: number;
+  purchase_amount: number;
+  savings?: number;
+  points_awarded?: number;
+  reward_details?: string;
+}
+
+export interface CouponListFilters {
+  shop_id: number;
+  user_id?: number;
+  card_id?: number;
+  status?: 'active' | 'used' | 'expired' | 'all';
+  page?: number;
+  per_page?: number;
 }
 
 // Games Types
 export interface Game {
   id: number;
-  name: string;
-  description: string;
-  image?: string;
-  type: 'slot_machine' | 'wheel_of_fortune' | 'scratch_card' | 'memory' | 'quiz' | 'puzzle';
-  config: Record<string, any>;
-  rewards: GameReward[];
-  points_cost?: number;
-  daily_limit?: number;
-  total_limit?: number;
+  partner_id: number;
+  name: string | Record<string, string>;
+  title?: string | Record<string, string>;
+  description: string | Record<string, string>;
+  game_type: 'stamps' | 'wheel' | 'quiz' | 'collection';
+  type: string; // Alias for game_type
+  image_path?: string;
   is_active: boolean;
-  is_featured: boolean;
-  categories: string[];
+  start_date?: string;
+  end_date?: string;
+  reward_description?: string;
+  status: 'available' | 'active' | 'completed';
+  user_progress: {
+    current_step: number;
+    completed: boolean;
+    completed_at: string | null;
+    history: GameHistoryEntry[];
+  };
+  partner_name?: string;
+  partner_info?: {
+    id: number;
+    name: string;
+    description?: string;
+  };
+  active_session?: {
+    id: number;
+    session_key: string;
+    started_at: string;
+  };
+  // Stamp-specific fields
+  stamps_required?: number;
+  current_stamps?: number;
+  total_stamps?: number;
+  stamp_settings?: StampSettings;
+  // Other game types
+  collection_items_count?: number;
+  wheel_segments_count?: number;
+  quiz_questions_count?: number;
+  today_play_count?: number;
   created_at: string;
   updated_at: string;
 }
 
+export interface StampSettings {
+  stamps_required: number;
+  reward_type: 'free_product' | 'discount' | 'points';
+  product_name?: string;
+  discount_amount?: number;
+  points_amount?: number;
+  expiration_days?: number;
+  reset_on_complete?: boolean;
+  layout?: string;
+  rows?: number;
+  columns?: number;
+  background_color?: string;
+  text_color?: string;
+  item_name_singular?: string;
+  item_name_plural?: string;
+  punch_text?: string;
+  reward_text?: string;
+  stamp_image?: string;
+  empty_slot_image?: string;
+  filled_slot_image?: string;
+  completed_image?: string;
+  stamp_icon_type?: string;
+  stamp_icon?: string;
+  stamp_custom_image?: string;
+}
+
+export interface GameHistoryEntry {
+  timestamp: string;
+  action: string;
+  value: number;
+  session_key?: string;
+  shop_id?: number;
+  performed_by_staff?: number;
+}
+
 export interface GameReward {
-  type: 'points' | 'coupon' | 'item' | 'discount';
+  type: 'points' | 'coupon' | 'item' | 'discount' | 'free_product';
   value: number | string;
-  probability: number;
-  description: string;
+  probability?: number;
+  description?: string;
 }
 
 export interface GameSession {
@@ -267,8 +450,7 @@ export interface GameSession {
   status: 'active' | 'completed' | 'expired' | 'cancelled';
   score?: number;
   level?: number;
-  progress_data: Record<string, any>;
-  reward_claimed?: GameReward;
+  data?: Record<string, any>;
   started_at?: string;
   completed_at?: string;
   expires_at?: string;

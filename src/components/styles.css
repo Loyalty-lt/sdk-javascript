@@ -354,6 +354,528 @@
   opacity: 0.8;
 }
 
+/* =================== GAME LIST COMPONENT =================== */
+.loyalty-game-list {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.loyalty-game-list--loading,
+.loyalty-game-list--error,
+.loyalty-game-list--empty {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.loyalty-game-list__spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: loyalty-spin 1s linear infinite;
+  margin: 0 auto 12px;
+}
+
+.loyalty-game-list__loading-text,
+.loyalty-game-list__empty-text {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.loyalty-game-list__error-text {
+  color: #dc2626;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.loyalty-game-list__retry-btn {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.loyalty-game-list__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.loyalty-game-list__item:hover {
+  background: #f9fafb;
+}
+
+.loyalty-game-list__item:last-child {
+  border-bottom: none;
+}
+
+.loyalty-game-list__item-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.loyalty-game-list__item-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.loyalty-game-list__item-emoji {
+  font-size: 24px;
+}
+
+.loyalty-game-list__item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.loyalty-game-list__item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.loyalty-game-list__item-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.loyalty-game-list__item-status {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #fff;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.loyalty-game-list__item-type {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 4px;
+}
+
+.loyalty-game-list__item-description {
+  font-size: 13px;
+  color: #4b5563;
+  margin: 0 0 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.loyalty-game-list__item-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loyalty-game-list__item-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.loyalty-game-list__item-progress-fill {
+  height: 100%;
+  background: #10b981;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.loyalty-game-list__item-progress-text {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.loyalty-game-list__item-partner {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 4px 0 0;
+}
+
+.loyalty-game-list__item-arrow {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+/* =================== STAMP CARD COMPONENT =================== */
+.loyalty-stamp-card {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 16px;
+}
+
+.loyalty-stamp-card__punch-text {
+  padding: 12px 16px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  color: #047857;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.loyalty-stamp-card__progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.loyalty-stamp-card__progress-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.loyalty-stamp-card__completed-badge {
+  padding: 4px 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 16px;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.loyalty-stamp-card__progress-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.loyalty-stamp-card__progress-fill {
+  height: 100%;
+  background: #10b981;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.loyalty-stamp-card__stamps {
+  margin-bottom: 24px;
+}
+
+.loyalty-stamp-card__stamp-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.loyalty-stamp-card__stamp-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.loyalty-stamp-card__stamp-row--wrap {
+  flex-wrap: wrap;
+}
+
+.loyalty-stamp-card__stamp {
+  border-radius: 50%;
+  border: 2px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.loyalty-stamp-card__completion {
+  text-align: center;
+  padding: 24px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+}
+
+.loyalty-stamp-card__completion-icon {
+  width: 48px;
+  height: 48px;
+  background: #10b981;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #fff;
+  margin: 0 auto 12px;
+}
+
+.loyalty-stamp-card__completion-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #047857;
+  margin: 0 0 8px;
+}
+
+.loyalty-stamp-card__completion-date {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 16px;
+}
+
+.loyalty-stamp-card__controls {
+  text-align: center;
+}
+
+.loyalty-stamp-card__select-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 16px;
+}
+
+.loyalty-stamp-card__counter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.loyalty-stamp-card__counter-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #e5e7eb;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.loyalty-stamp-card__counter-btn:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+.loyalty-stamp-card__counter-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loyalty-stamp-card__counter-value {
+  font-size: 32px;
+  font-weight: 700;
+  min-width: 48px;
+}
+
+.loyalty-stamp-card__button {
+  display: inline-block;
+  padding: 14px 32px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  max-width: 240px;
+}
+
+.loyalty-stamp-card__button--primary {
+  background: #10b981;
+  color: #fff;
+}
+
+.loyalty-stamp-card__button--primary:hover:not(:disabled) {
+  background: #059669;
+}
+
+.loyalty-stamp-card__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =================== GAME DETAIL SHEET COMPONENT =================== */
+.loyalty-game-detail-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  .loyalty-game-detail-backdrop {
+    align-items: center;
+    padding: 24px;
+  }
+}
+
+.loyalty-game-detail-sheet {
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  max-height: 90vh;
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: loyalty-slide-up 0.3s ease-out;
+}
+
+@media (min-width: 768px) {
+  .loyalty-game-detail-sheet {
+    border-radius: 16px;
+    max-height: 80vh;
+  }
+}
+
+@keyframes loyalty-slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.loyalty-game-detail__handle {
+  width: 40px;
+  height: 4px;
+  background: #d1d5db;
+  border-radius: 2px;
+  margin: 12px auto;
+}
+
+@media (min-width: 768px) {
+  .loyalty-game-detail__handle {
+    display: none;
+  }
+}
+
+.loyalty-game-detail__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.loyalty-game-detail__header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.loyalty-game-detail__header-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.loyalty-game-detail__title {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.loyalty-game-detail__close-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.loyalty-game-detail__close-btn:hover {
+  background: #f3f4f6;
+}
+
+.loyalty-game-detail__description {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.loyalty-game-detail__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.loyalty-game-detail__unsupported {
+  text-align: center;
+  padding: 32px 16px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+}
+
+.loyalty-game-detail__unsupported-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.loyalty-game-detail__unsupported-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #92400e;
+  margin: 0 0 8px;
+}
+
+.loyalty-game-detail__unsupported-type {
+  font-size: 12px;
+  color: #78716c;
+  margin: 0 0 8px;
+}
+
+.loyalty-game-detail__unsupported-help {
+  font-size: 12px;
+  color: #78716c;
+  margin: 0;
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .loyalty-qr-login__placeholder {
@@ -404,5 +926,794 @@
 
   .loyalty-qr-login__modal-input:focus {
     border-color: #fff;
+  }
+
+  /* Games dark mode */
+  .loyalty-game-list__item {
+    border-color: #374151;
+  }
+
+  .loyalty-game-list__item:hover {
+    background: #1f2937;
+  }
+
+  .loyalty-game-list__item-icon {
+    background: #374151;
+  }
+
+  .loyalty-game-list__item-name {
+    color: #fff;
+  }
+
+  .loyalty-game-list__item-description {
+    color: #9ca3af;
+  }
+
+  .loyalty-game-list__item-progress-bar {
+    background: #374151;
+  }
+
+  .loyalty-stamp-card__progress-text,
+  .loyalty-stamp-card__select-text,
+  .loyalty-stamp-card__counter-value {
+    color: #fff;
+  }
+
+  .loyalty-stamp-card__progress-bar {
+    background: #374151;
+  }
+
+  .loyalty-stamp-card__counter-btn {
+    background: #374151;
+    color: #fff;
+  }
+
+  .loyalty-stamp-card__counter-btn:hover:not(:disabled) {
+    background: #4b5563;
+  }
+
+  .loyalty-game-detail-sheet {
+    background: #1f2937;
+  }
+
+  .loyalty-game-detail__header {
+    border-color: #374151;
+  }
+
+  .loyalty-game-detail__header-icon {
+    background: #374151;
+  }
+
+  .loyalty-game-detail__title {
+    color: #fff;
+  }
+
+  .loyalty-game-detail__close-btn {
+    color: #9ca3af;
+  }
+
+  .loyalty-game-detail__close-btn:hover {
+    background: #374151;
+  }
+
+  .loyalty-game-detail__description {
+    color: #9ca3af;
+    border-color: #374151;
+  }
+
+  .loyalty-game-detail__handle {
+    background: #4b5563;
+  }
+}
+
+/* ==================== COUPON CARD ==================== */
+
+.loyalty-coupon-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.loyalty-coupon-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.loyalty-coupon-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.loyalty-coupon-card__title-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.loyalty-coupon-card__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loyalty-coupon-card__status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 12px;
+  text-transform: capitalize;
+}
+
+.loyalty-coupon-card__code {
+  font-size: 12px;
+  color: #6b7280;
+  font-family: monospace;
+}
+
+.loyalty-coupon-card__description {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.loyalty-coupon-card__reward {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border-radius: 8px;
+}
+
+.loyalty-coupon-card__reward-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.loyalty-coupon-card__reward-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.loyalty-coupon-card__product-selection {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #f59e0b;
+  background: #fffbeb;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.loyalty-coupon-card__product-icon {
+  font-size: 14px;
+}
+
+.loyalty-coupon-card__meta {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.loyalty-coupon-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.loyalty-coupon-card__button {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.loyalty-coupon-card__button--primary {
+  background: #10b981;
+  color: #fff;
+}
+
+.loyalty-coupon-card__button--primary:hover {
+  background: #059669;
+}
+
+.loyalty-coupon-card__button--secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.loyalty-coupon-card__button--secondary:hover {
+  background: #e5e7eb;
+}
+
+/* ==================== COUPON LIST ==================== */
+
+.loyalty-coupon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.loyalty-coupon-list__header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loyalty-coupon-list__title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.loyalty-coupon-list__filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.loyalty-coupon-list__filter-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+}
+
+.loyalty-coupon-list__filter-btn:hover {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.loyalty-coupon-list__filter-btn--active {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.loyalty-coupon-list__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.loyalty-coupon-list__loading,
+.loyalty-coupon-list__error,
+.loyalty-coupon-list__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  color: #6b7280;
+  gap: 12px;
+}
+
+.loyalty-coupon-list__spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: loyalty-spin 0.8s linear infinite;
+}
+
+.loyalty-coupon-list__empty-icon {
+  font-size: 48px;
+}
+
+.loyalty-coupon-list__error {
+  color: #ef4444;
+  background: #fef2f2;
+  border-radius: 8px;
+}
+
+.loyalty-coupon-list__load-more {
+  display: flex;
+  justify-content: center;
+  padding-top: 16px;
+}
+
+.loyalty-coupon-list__load-more-btn {
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.loyalty-coupon-list__load-more-btn:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.loyalty-coupon-list__load-more-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ==================== COUPON DETAIL SHEET ==================== */
+
+.loyalty-coupon-detail {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.loyalty-coupon-detail__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  animation: loyalty-fade-in 0.2s ease-out;
+}
+
+.loyalty-coupon-detail__sheet {
+  position: relative;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: loyalty-slide-up 0.3s ease-out;
+}
+
+.loyalty-coupon-detail__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.loyalty-coupon-detail__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.loyalty-coupon-detail__close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.loyalty-coupon-detail__close:hover {
+  background: #e5e7eb;
+}
+
+.loyalty-coupon-detail__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.loyalty-coupon-detail__info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.loyalty-coupon-detail__label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.loyalty-coupon-detail__value {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 500;
+}
+
+.loyalty-coupon-detail__code {
+  font-family: monospace;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.loyalty-coupon-detail__status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 12px;
+  text-transform: capitalize;
+}
+
+.loyalty-coupon-detail__status--active {
+  background: #d1fae5;
+  color: #10b981;
+}
+
+.loyalty-coupon-detail__status--pending {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.loyalty-coupon-detail__status--used {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.loyalty-coupon-detail__status--expired {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.loyalty-coupon-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loyalty-coupon-detail__section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.loyalty-coupon-detail__section-content {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.loyalty-coupon-detail__description {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.loyalty-coupon-detail__terms {
+  font-size: 12px;
+  background: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.loyalty-coupon-detail__products {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loyalty-coupon-detail__product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.loyalty-coupon-detail__product:hover {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.loyalty-coupon-detail__product--selected {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.loyalty-coupon-detail__product-image {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.loyalty-coupon-detail__product-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.loyalty-coupon-detail__product-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.loyalty-coupon-detail__product-desc {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.loyalty-coupon-detail__product-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.loyalty-coupon-detail__loading,
+.loyalty-coupon-detail__empty {
+  padding: 24px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.loyalty-coupon-detail__error {
+  padding: 12px;
+  background: #fef2f2;
+  color: #ef4444;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.loyalty-coupon-detail__success {
+  padding: 12px;
+  background: #f0fdf4;
+  color: #10b981;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.loyalty-coupon-detail__actions {
+  display: flex;
+  gap: 12px;
+  padding: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.loyalty-coupon-detail__button {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.loyalty-coupon-detail__button--primary {
+  background: #10b981;
+  color: #fff;
+}
+
+.loyalty-coupon-detail__button--primary:hover:not(:disabled) {
+  background: #059669;
+}
+
+.loyalty-coupon-detail__button--secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.loyalty-coupon-detail__button--secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.loyalty-coupon-detail__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Dark mode for coupons */
+@media (prefers-color-scheme: dark) {
+  .loyalty-coupon-card {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .loyalty-coupon-card__title {
+    color: #fff;
+  }
+
+  .loyalty-coupon-card__code,
+  .loyalty-coupon-card__description,
+  .loyalty-coupon-card__meta {
+    color: #9ca3af;
+  }
+
+  .loyalty-coupon-card__reward {
+    background: #064e3b30;
+  }
+
+  .loyalty-coupon-card__product-selection {
+    background: #78350f30;
+  }
+
+  .loyalty-coupon-card__actions {
+    border-color: #374151;
+  }
+
+  .loyalty-coupon-card__button--secondary {
+    background: #374151;
+    color: #fff;
+  }
+
+  .loyalty-coupon-card__button--secondary:hover {
+    background: #4b5563;
+  }
+
+  .loyalty-coupon-list__title {
+    color: #fff;
+  }
+
+  .loyalty-coupon-list__filter-btn {
+    background: #1f2937;
+    border-color: #374151;
+    color: #9ca3af;
+  }
+
+  .loyalty-coupon-list__filter-btn:hover {
+    border-color: #10b981;
+    color: #10b981;
+  }
+
+  .loyalty-coupon-list__filter-btn--active {
+    background: #10b981;
+    border-color: #10b981;
+    color: #fff;
+  }
+
+  .loyalty-coupon-list__loading,
+  .loyalty-coupon-list__empty {
+    color: #9ca3af;
+  }
+
+  .loyalty-coupon-list__error {
+    background: #7f1d1d30;
+    color: #fca5a5;
+  }
+
+  .loyalty-coupon-list__load-more-btn {
+    background: #1f2937;
+    border-color: #374151;
+    color: #fff;
+  }
+
+  .loyalty-coupon-list__load-more-btn:hover:not(:disabled) {
+    background: #374151;
+  }
+
+  .loyalty-coupon-detail__sheet {
+    background: #1f2937;
+  }
+
+  .loyalty-coupon-detail__header {
+    border-color: #374151;
+  }
+
+  .loyalty-coupon-detail__title {
+    color: #fff;
+  }
+
+  .loyalty-coupon-detail__close {
+    background: #374151;
+    color: #9ca3af;
+  }
+
+  .loyalty-coupon-detail__close:hover {
+    background: #4b5563;
+  }
+
+  .loyalty-coupon-detail__label {
+    color: #9ca3af;
+  }
+
+  .loyalty-coupon-detail__value {
+    color: #fff;
+  }
+
+  .loyalty-coupon-detail__code {
+    background: #374151;
+  }
+
+  .loyalty-coupon-detail__section-title {
+    color: #fff;
+  }
+
+  .loyalty-coupon-detail__section-content,
+  .loyalty-coupon-detail__description {
+    color: #9ca3af;
+  }
+
+  .loyalty-coupon-detail__terms {
+    background: #111827;
+  }
+
+  .loyalty-coupon-detail__product {
+    border-color: #374151;
+  }
+
+  .loyalty-coupon-detail__product:hover,
+  .loyalty-coupon-detail__product--selected {
+    border-color: #10b981;
+    background: #064e3b30;
+  }
+
+  .loyalty-coupon-detail__product-name {
+    color: #fff;
+  }
+
+  .loyalty-coupon-detail__product-desc,
+  .loyalty-coupon-detail__loading,
+  .loyalty-coupon-detail__empty {
+    color: #9ca3af;
+  }
+
+  .loyalty-coupon-detail__error {
+    background: #7f1d1d30;
+    color: #fca5a5;
+  }
+
+  .loyalty-coupon-detail__success {
+    background: #064e3b30;
+    color: #6ee7b7;
+  }
+
+  .loyalty-coupon-detail__actions {
+    border-color: #374151;
+  }
+
+  .loyalty-coupon-detail__button--secondary {
+    background: #374151;
+    color: #fff;
+  }
+
+  .loyalty-coupon-detail__button--secondary:hover:not(:disabled) {
+    background: #4b5563;
   }
 }

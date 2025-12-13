@@ -13,6 +13,17 @@ import {
   PointsBalance,
   Offer,
   Shop,
+  Game,
+  GameSession,
+  GameFilters,
+  GameHistoryFilters,
+  Coupon,
+  CouponVerifyResponse,
+  CouponRedeemResponse,
+  CouponPendingResponse,
+  CouponDiscountCalculation,
+  CouponListFilters,
+  CouponProduct,
   ApiResponse,
   PaginatedResponse,
   LoyaltyCardFilters,
@@ -308,6 +319,352 @@ export class LoyaltySDK {
 
   async getProductsSyncStatus(): Promise<any> {
     return await this.makeRequest('GET', '/shop/products/sync-status');
+  }
+
+  // ==================== GAMES API ====================
+
+  /**
+   * Get list of available games
+   * @param filters - Optional filters for games
+   * @returns Paginated list of games with user progress
+   */
+  async getGames(filters?: GameFilters): Promise<PaginatedResponse<Game>> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
+      });
+    }
+    return await this.makeRequest<PaginatedResponse<Game>>('GET', `/shop/games?${params.toString()}`);
+  }
+
+  /**
+   * Get all games with user progress for the current user
+   * @param filters - Optional filters
+   * @returns Paginated list of games with user progress
+   */
+  async getMyGames(filters?: { partner_id?: number; status?: 'available' | 'active' | 'completed'; per_page?: number; page?: number }): Promise<PaginatedResponse<Game>> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
+      });
+    }
+    return await this.makeRequest<PaginatedResponse<Game>>('GET', `/shop/games/my-games?${params.toString()}`);
+  }
+
+  /**
+   * Get a single game by ID with user progress
+   * @param id - Game ID
+   * @returns Game details with user progress
+   */
+  async getGame(id: number): Promise<Game> {
+    return await this.makeRequest<Game>('GET', `/shop/games/${id}`);
+  }
+
+  /**
+   * Start a new game session
+   * @param gameId - Game ID
+   * @returns New game session details
+   */
+  async startGameSession(gameId: number): Promise<{
+    session_id: number;
+    session_key: string;
+    expires_at: string;
+    progress: any;
+    game: {
+      id: number;
+      name: string;
+      type: string;
+      description: string;
+    };
+  }> {
+    return await this.makeRequest('POST', `/shop/games/${gameId}/start-session`);
+  }
+
+  /**
+   * Get game session status
+   * @param sessionKey - Session key from startGameSession
+   * @returns Game session details
+   */
+  async getGameSession(sessionKey: string): Promise<GameSession> {
+    return await this.makeRequest<GameSession>('GET', `/shop/game-sessions/${sessionKey}`);
+  }
+
+  /**
+   * Record game progress
+   * @param sessionKey - Session key
+   * @param progress - Progress data
+   * @returns Updated game session
+   */
+  async recordGameProgress(sessionKey: string, progress: {
+    score?: number;
+    level?: number;
+    progress_data?: Record<string, any>;
+  }): Promise<GameSession> {
+    return await this.makeRequest<GameSession>('PUT', `/shop/game-sessions/${sessionKey}/progress`, progress);
+  }
+
+  /**
+   * Claim game reward after completing a game
+   * @param sessionKey - Session key
+   * @returns Reward details
+   */
+  async claimGameReward(sessionKey: string): Promise<{
+    reward_claimed: boolean;
+    coupon: any | null;
+    session: GameSession;
+    reward_description: string;
+  }> {
+    return await this.makeRequest('POST', `/shop/game-sessions/${sessionKey}/claim-reward`);
+  }
+
+  /**
+   * Get user's game history
+   * @param filters - Optional filters
+   * @returns Paginated list of game sessions
+   */
+  async getGameHistory(filters?: GameHistoryFilters): Promise<PaginatedResponse<GameSession>> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
+      });
+    }
+    return await this.makeRequest<PaginatedResponse<GameSession>>('GET', `/shop/game-sessions/history?${params.toString()}`);
+  }
+
+  // ==================== PARTNER GAMES API (Staff/POS) ====================
+
+  /**
+   * List games available for a specific shop (Partner API)
+   * @param shopId - Shop ID
+   * @param filters - Optional filters
+   * @returns Paginated list of games with stamp settings
+   */
+  async listShopGames(shopId: number, filters?: { type?: string; per_page?: number; page?: number }): Promise<PaginatedResponse<Game>> {
+    const params = new URLSearchParams();
+    params.append('shop_id', String(shopId));
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
+      });
+    }
+    return await this.makeRequest<PaginatedResponse<Game>>('GET', `/shop/games?${params.toString()}`);
+  }
+
+  /**
+   * Get games for a specific customer card (Partner API)
+   * @param cardId - Loyalty card ID
+   * @param shopId - Shop ID
+   * @returns List of games with user progress
+   */
+  async getCardGames(cardId: number, shopId?: number): Promise<Game[]> {
+    const params = new URLSearchParams();
+    if (shopId) params.append('shop_id', String(shopId));
+    return await this.makeRequest<Game[]>('GET', `/shop/cards/${cardId}/games?${params.toString()}`);
+  }
+
+  /**
+   * Get customer game history (Partner API)
+   * @param cardId - Loyalty card ID  
+   * @param shopId - Optional shop ID filter
+   * @returns List of game progress history
+   */
+  async getCustomerGameHistory(cardId: number, shopId?: number): Promise<Game[]> {
+    const params = new URLSearchParams();
+    if (shopId) params.append('shop_id', String(shopId));
+    return await this.makeRequest<Game[]>('GET', `/shop/cards/${cardId}/games/history?${params.toString()}`);
+  }
+
+  /**
+   * Get detailed game progress for a customer (Partner API)
+   * @param gameId - Game ID
+   * @param cardId - Loyalty card ID
+   * @returns Detailed game progress including stamp settings
+   */
+  async getGameProgress(gameId: number, cardId: number): Promise<{
+    game: Game;
+    progress: { current_step: number; completed: boolean; completed_at?: string; history: any[] };
+    stamps_required: number;
+    stamp_settings?: any;
+  }> {
+    return await this.makeRequest('GET', `/shop/games/${gameId}/progress?card_id=${cardId}`);
+  }
+
+  /**
+   * Add stamps to a customer's stamp card (Partner API)
+   * @param gameId - Game ID
+   * @param cardId - Loyalty card ID
+   * @param shopId - Shop ID
+   * @param stampsCount - Number of stamps to add
+   * @returns Updated progress and completion status
+   */
+  async addStamps(gameId: number, cardId: number, shopId: number, stampsCount: number = 1): Promise<{
+    current_step: number;
+    is_completed: boolean;
+    was_already_completed: boolean;
+    reward_generated?: any;
+  }> {
+    return await this.makeRequest('POST', `/shop/games/${gameId}/add-stamps`, {
+      card_id: cardId,
+      shop_id: shopId,
+      stamps_count: stampsCount,
+    });
+  }
+
+  /**
+   * Complete a stamp card game (Partner API)
+   * @param gameId - Game ID
+   * @param cardId - Loyalty card ID
+   * @returns Completion result with reward details
+   */
+  async completeStampCard(gameId: number, cardId: number): Promise<{
+    completed: boolean;
+    reward?: any;
+    coupon?: any;
+  }> {
+    return await this.makeRequest('POST', `/shop/games/${gameId}/complete`, {
+      card_id: cardId,
+    });
+  }
+
+  /**
+   * Restart a game session for a customer (Partner API)
+   * @param gameId - Game ID
+   * @param cardId - Loyalty card ID
+   * @param shopId - Shop ID
+   * @returns New game session details
+   */
+  async restartGame(gameId: number, cardId: number, shopId: number): Promise<{
+    success: boolean;
+    message: string;
+    progress: { current_step: number; completed: boolean };
+  }> {
+    return await this.makeRequest('POST', `/shop/games/${gameId}/restart`, {
+      card_id: cardId,
+      shop_id: shopId,
+    });
+  }
+
+  // ==================== COUPONS API (Partner API) ====================
+
+  /**
+   * Verify a coupon by scanning its code (Partner API)
+   * @param couponCode - Coupon code or QR code
+   * @param shopId - Shop ID where the coupon is being verified
+   * @returns Coupon details with user and card info
+   */
+  async verifyCoupon(couponCode: string, shopId: number): Promise<CouponVerifyResponse> {
+    return await this.makeRequest<CouponVerifyResponse>('POST', '/shop/coupons/verify', {
+      coupon_code: couponCode,
+      shop_id: shopId,
+    });
+  }
+
+  /**
+   * Redeem a coupon (Partner API)
+   * @param couponId - Coupon ID
+   * @param shopId - Shop ID where the coupon is being redeemed
+   * @param selectedProductId - Optional product ID if coupon requires product selection
+   * @param notes - Optional notes for the redemption
+   * @returns Redemption confirmation
+   */
+  async redeemCoupon(couponId: number, shopId: number, selectedProductId?: number, notes?: string): Promise<CouponRedeemResponse> {
+    return await this.makeRequest<CouponRedeemResponse>('POST', '/shop/coupons/redeem', {
+      coupon_id: couponId,
+      shop_id: shopId,
+      ...(selectedProductId && { selected_product_id: selectedProductId }),
+      ...(notes && { notes }),
+    });
+  }
+
+  /**
+   * Set a coupon to pending status (Partner API)
+   * @param couponId - Coupon ID
+   * @param shopId - Shop ID
+   * @param selectedProductId - Optional product ID for selection
+   * @returns Pending status confirmation
+   */
+  async setCouponPending(couponId: number, shopId: number, selectedProductId?: number): Promise<CouponPendingResponse> {
+    return await this.makeRequest<CouponPendingResponse>('POST', '/shop/coupons/pending', {
+      coupon_id: couponId,
+      shop_id: shopId,
+      ...(selectedProductId && { selected_product_id: selectedProductId }),
+    });
+  }
+
+  /**
+   * Cancel pending status of a coupon (Partner API)
+   * @param couponId - Coupon ID
+   * @param shopId - Shop ID
+   * @returns Cancellation confirmation
+   */
+  async cancelCouponPending(couponId: number, shopId: number): Promise<{ coupon_id: number; cancelled_at: string }> {
+    return await this.makeRequest('POST', '/shop/coupons/cancel-pending', {
+      coupon_id: couponId,
+      shop_id: shopId,
+    });
+  }
+
+  /**
+   * List coupons for a shop/customer (Partner API)
+   * @param filters - Filters including shop_id, user_id, card_id, status
+   * @returns Paginated list of coupons
+   */
+  async listCoupons(filters: CouponListFilters): Promise<{ coupons: Coupon[]; pagination: { current_page: number; per_page: number; total: number; last_page: number } }> {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        params.append(key, String(value));
+      }
+    });
+    return await this.makeRequest('GET', `/shop/coupons?${params.toString()}`);
+  }
+
+  /**
+   * Get active coupons for a specific loyalty card (Partner API)
+   * @param shopId - Shop ID
+   * @param cardId - Optional loyalty card ID
+   * @param userId - Optional user ID (if card_id not provided)
+   * @returns List of active coupons with products/categories
+   */
+  async getCardCoupons(shopId: number, cardId?: number, userId?: number): Promise<{ coupons: Coupon[]; total_count: number }> {
+    const params = new URLSearchParams();
+    params.append('shop_id', String(shopId));
+    if (cardId) params.append('card_id', String(cardId));
+    if (userId) params.append('user_id', String(userId));
+    return await this.makeRequest('GET', `/shop/coupons/card?${params.toString()}`);
+  }
+
+  /**
+   * Get available products for a coupon (Partner API)
+   * @param couponId - Coupon ID
+   * @returns List of products available for this coupon
+   */
+  async getCouponProducts(couponId: number): Promise<{ products: CouponProduct[]; total_count: number; selection_required: boolean }> {
+    return await this.makeRequest('GET', `/shop/coupons/products?coupon_id=${couponId}`);
+  }
+
+  /**
+   * Calculate discount amount for a coupon (Partner API)
+   * @param couponCode - Coupon code
+   * @param purchaseAmount - Purchase amount to calculate discount for
+   * @returns Discount calculation details
+   */
+  async calculateCouponDiscount(couponCode: string, purchaseAmount: number): Promise<CouponDiscountCalculation> {
+    return await this.makeRequest<CouponDiscountCalculation>('POST', '/shop/coupons/calculate-discount', {
+      coupon_code: couponCode,
+      purchase_amount: purchaseAmount,
+    });
   }
 
   subscribeToChannel(channelName: string, callback: (message: WebSocketMessage) => void): WebSocketSubscription {

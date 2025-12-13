@@ -198,6 +198,54 @@
         </div>
     </div>
 
+    <!-- GAMES MODAL -->
+    <div id="gamesModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="loyalty-gradient p-6 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-white">🎮 Games & Stamp Cards</h2>
+                    <p class="text-white/70 text-sm">Add stamps or view progress</p>
+                </div>
+                <button onclick="closeGamesModal()" class="text-white/70 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="gamesContent" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div class="text-center py-8 text-loyalty-text/50">Loading games...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COUPONS MODAL -->
+    <div id="couponsModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="loyalty-gradient p-6 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-white">🎟️ Coupons</h2>
+                    <p class="text-white/70 text-sm">Apply or redeem coupons</p>
+                </div>
+                <button onclick="closeCouponsModal()" class="text-white/70 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="couponsContent" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div class="text-center py-8 text-loyalty-text/50">Loading coupons...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COUPON PRODUCTS MODAL -->
+    <div id="couponProductsModal" class="fixed inset-0 z-[60] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[70vh] overflow-hidden flex flex-col">
+            <div class="bg-orange-500 p-6 flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-bold text-white">📦 Select Product</h2>
+                    <p id="couponProductsTitle" class="text-white/80 text-sm"></p>
+                </div>
+                <button onclick="closeCouponProductsModal()" class="text-white/70 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="couponProductsContent" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <div class="text-center py-8 text-loyalty-text/50">Loading products...</div>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN SPLIT LAYOUT -->
     <div class="grid grid-cols-2 h-screen">
         
@@ -302,7 +350,7 @@
                                 <div class="text-white/60 text-xs">Card Number</div>
                                 <div id="customerCardNumber" class="text-sm font-mono font-medium tracking-wider">-</div>
                             </div>
-                            <div class="flex justify-between items-end">
+                            <div class="flex justify-between items-end mb-3">
                                 <div>
                                     <div class="text-white/60 text-xs">Points</div>
                                     <div id="customerPoints" class="text-2xl font-bold">0</div>
@@ -312,13 +360,26 @@
                                     <div id="pointsWorth" class="text-lg font-semibold">€0.00</div>
                                 </div>
                             </div>
+                            
+                            <!-- Games & Coupons Buttons -->
+                            <div class="flex gap-2 pt-2 border-t border-white/20">
+                                <button onclick="openGamesModal()" class="flex-1 bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                                    🎮 <span>Games</span>
+                                    <span id="gamesCount" class="bg-white/30 px-2 py-0.5 rounded-full text-xs">0</span>
+                                </button>
+                                <button onclick="openCouponsModal()" class="flex-1 bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                                    🎟️ <span>Coupons</span>
+                                    <span id="couponsCount" class="bg-white/30 px-2 py-0.5 rounded-full text-xs">0</span>
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- Tabs -->
                         <div class="mt-4 border-t border-loyalty-primary/10 pt-4">
                             <div class="flex gap-1 mb-3">
                                 <button class="tab-btn flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-loyalty-primary text-white" onclick="showCustomerTab('lookup')">Card Lookup</button>
-                                <button class="tab-btn flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-white text-loyalty-text border border-loyalty-primary/20" onclick="showCustomerTab('sendlink')">Send App Link</button>
+                                <button class="tab-btn flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-white text-loyalty-text border border-loyalty-primary/20" onclick="showCustomerTab('sendlink')">Send Link</button>
+                                <button class="tab-btn flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-white text-loyalty-text border border-loyalty-primary/20" onclick="showCustomerTab('couponcode')">Coupon</button>
                             </div>
                             
                             <div id="lookupTab">
@@ -336,6 +397,15 @@
                                     </button>
                                 </div>
                             </div>
+                            
+                            <div id="couponcodeTab" class="hidden">
+                                <div class="flex gap-2">
+                                    <input type="text" id="couponCodeInput" placeholder="Enter coupon code (K...)..." class="flex-1 px-3 py-2 text-sm border border-loyalty-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-loyalty-primary/50">
+                                    <button onclick="verifyCouponCode()" id="verifyCouponBtn" class="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors">
+                                        🎟️ Verify
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -348,10 +418,25 @@
                         <p class="text-loyalty-text/50 text-sm text-center py-8">Cart is empty</p>
                     </div>
                     
+                    <!-- Applied Coupon -->
+                    <div id="appliedCouponRow" class="hidden bg-green-50 border border-green-200 rounded-lg p-3 mb-2">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-green-700 font-medium text-sm">🎟️ <span id="appliedCouponName">Coupon</span></div>
+                                <div id="appliedCouponDesc" class="text-green-600 text-xs"></div>
+                            </div>
+                            <button onclick="removeAppliedCoupon()" class="text-green-600 hover:text-green-800 text-lg">&times;</button>
+                        </div>
+                    </div>
+                    
                     <div class="border-t border-loyalty-primary/10 pt-4 mt-4 space-y-2">
                         <div class="flex justify-between text-sm">
                             <span class="text-loyalty-text/70">Subtotal</span>
                             <span id="subtotal" class="font-medium">€0.00</span>
+                        </div>
+                        <div id="couponDiscountRow" class="hidden flex justify-between text-sm text-green-600">
+                            <span>Coupon</span>
+                            <span id="couponDiscountAmount">-€0.00</span>
                         </div>
                         <div id="discountRow" class="hidden flex justify-between text-sm text-green-600">
                             <span>Discount</span>
@@ -396,8 +481,11 @@
         let sdk = null;
         let currentCustomer = null;
         let currentCard = null;
+        let currentShopId = null;
         let cart = [];
         let appliedOffer = null;
+        let appliedCoupon = null;
+        let couponDiscount = 0;
         let pointsToRedeem = 0;
         let qrSession = null;
         let ablyClient = null;
@@ -405,6 +493,9 @@
         let sessionChannel = null;
         let shoppingSessionId = null;
         let pointsRules = null;
+        let customerGames = [];
+        let customerCoupons = [];
+        let selectedCouponForProducts = null;
         
         // Default values, will be overridden by pointsRules from backend
         const DEFAULT_POINTS_TO_EUR = 0.01;
@@ -457,9 +548,15 @@
                 sdk = new SDK({
                     apiKey: apiKey,
                     apiSecret: apiSecret,
-                    environment: 'production',
-                    locale: 'lt'
+                    environment: 'staging',
+                    locale: 'lt',
+                    debug: true
                 });
+                
+                // Debug: show which API URL is being used
+                const config = sdk.getConfig();
+                console.log('[POS] SDK Config:', config);
+                console.log('[POS] API URL:', config.environment === 'staging' ? 'https://staging-api.loyalty.lt/lt' : 'https://api.loyalty.lt/lt');
                 
                 const validation = await sdk.validateCredentials();
                 
@@ -469,6 +566,7 @@
                 
                 const shops = await sdk.getShops();
                 if (shops.data && shops.data.length > 0) {
+                    currentShopId = shops.data[0].id;
                     document.getElementById('shopAddress').textContent = shops.data[0].address || shops.data[0].phone || '';
                 }
                 
@@ -596,6 +694,9 @@
             document.getElementById('cdCustomerName').textContent = currentCustomer.name;
             document.getElementById('cdCardNumber').textContent = currentCard.card_number || '';
             document.getElementById('cdCustomerPoints').textContent = currentCustomer.points.toLocaleString();
+            
+            // Load games and coupons
+            await loadCustomerGamesAndCoupons();
             
             // Start shopping session
             await startShoppingSession(cardData);
@@ -849,14 +950,340 @@
         }
         
         function showCustomerTab(tab) {
+            const tabs = ['lookup', 'sendlink', 'couponcode'];
             document.querySelectorAll('.tab-btn').forEach((btn, i) => {
                 btn.className = 'tab-btn flex-1 px-3 py-2 text-xs font-medium rounded-lg ' + 
-                    ((i === 0 && tab === 'lookup') || (i === 1 && tab === 'sendlink') 
-                        ? 'bg-loyalty-primary text-white' 
-                        : 'bg-white text-loyalty-text border border-loyalty-primary/20');
+                    (tabs[i] === tab ? 'bg-loyalty-primary text-white' : 'bg-white text-loyalty-text border border-loyalty-primary/20');
             });
-            document.getElementById('lookupTab').classList.toggle('hidden', tab !== 'lookup');
-            document.getElementById('sendlinkTab').classList.toggle('hidden', tab !== 'sendlink');
+            tabs.forEach(t => {
+                document.getElementById(t + 'Tab').classList.toggle('hidden', t !== tab);
+            });
+        }
+        
+        // ==================== GAMES FUNCTIONALITY ====================
+        
+        async function loadCustomerGamesAndCoupons() {
+            console.log('[POS DEBUG] loadCustomerGamesAndCoupons called');
+            console.log('[POS DEBUG] currentCard:', currentCard);
+            console.log('[POS DEBUG] currentShopId:', currentShopId);
+            
+            if (!currentCard || !currentShopId) {
+                console.log('[POS DEBUG] Missing card or shop, returning early');
+                return;
+            }
+            
+            try {
+                // Load games
+                console.log('[POS DEBUG] Calling sdk.getCardGames with cardId:', currentCard.id, 'shopId:', currentShopId);
+                console.log('[POS DEBUG] SDK method exists?', typeof sdk.getCardGames);
+                const gamesResult = await sdk.getCardGames(currentCard.id, currentShopId);
+                console.log('[POS DEBUG] Games result:', gamesResult);
+                customerGames = gamesResult?.data || gamesResult || [];
+                console.log('[POS DEBUG] customerGames:', customerGames);
+                document.getElementById('gamesCount').textContent = customerGames.length;
+                
+                // Load coupons
+                console.log('[POS DEBUG] Calling sdk.getCardCoupons');
+                console.log('[POS DEBUG] SDK getCardCoupons exists?', typeof sdk.getCardCoupons);
+                const couponsResult = await sdk.getCardCoupons(currentShopId, currentCard.id);
+                console.log('[POS DEBUG] Coupons result:', couponsResult);
+                customerCoupons = couponsResult?.data || couponsResult?.coupons || couponsResult || [];
+                console.log('[POS DEBUG] customerCoupons:', customerCoupons);
+                document.getElementById('couponsCount').textContent = customerCoupons.length;
+            } catch (error) {
+                console.error('[POS DEBUG] Error loading games/coupons:', error);
+                console.error('[POS DEBUG] Error stack:', error.stack);
+                customerGames = [];
+                customerCoupons = [];
+            }
+        }
+        
+        function openGamesModal() {
+            document.getElementById('gamesModal').classList.remove('hidden');
+            renderGames();
+        }
+        
+        function closeGamesModal() {
+            document.getElementById('gamesModal').classList.add('hidden');
+        }
+        
+        function renderGames() {
+            const content = document.getElementById('gamesContent');
+            
+            if (customerGames.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="text-5xl mb-4">🎮</div>
+                        <p class="text-loyalty-text/70">No active games</p>
+                        <p class="text-loyalty-text/50 text-sm">Customer has no games at this shop</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            content.innerHTML = customerGames.map(game => {
+                const progress = game.user_progress || { current_step: 0, completed: false };
+                const stampsRequired = game.stamps_required || game.stamp_settings?.stamps_required || 10;
+                const currentStamps = progress.current_step || 0;
+                const isCompleted = progress.completed;
+                const gameName = typeof game.name === 'object' ? (game.name.lt || game.name.en || Object.values(game.name)[0]) : game.name;
+                
+                let stampsHtml = '';
+                for (let i = 0; i < stampsRequired; i++) {
+                    const filled = i < currentStamps;
+                    stampsHtml += `<div class="w-8 h-8 rounded-full border-2 flex items-center justify-center ${filled ? 'bg-green-100 border-green-500 text-green-600' : 'bg-gray-100 border-gray-300 text-gray-400'}">${filled ? '⭐' : '○'}</div>`;
+                }
+                
+                return `
+                    <div class="bg-white rounded-xl border border-loyalty-primary/10 p-4 ${isCompleted ? 'bg-green-50 border-green-200' : ''}">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h4 class="font-semibold text-loyalty-heading">${gameName}</h4>
+                                <p class="text-sm text-loyalty-text/70">${game.game_type === 'stamps' ? 'Stamp Card' : game.game_type}</p>
+                            </div>
+                            ${isCompleted ? '<span class="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium">✓ Completed</span>' : ''}
+                        </div>
+                        <div class="flex flex-wrap gap-2 mb-3">${stampsHtml}</div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-loyalty-text/70">${currentStamps}/${stampsRequired} stamps</span>
+                            ${isCompleted ? `
+                                <button onclick="restartGame(${game.id})" class="bg-loyalty-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-loyalty-heading">🔄 Restart</button>
+                            ` : `
+                                <div class="flex items-center gap-2">
+                                    <button onclick="addStampToGame(${game.id}, 1)" class="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600">+1 Stamp</button>
+                                    <button onclick="showStampSelector(${game.id}, ${stampsRequired - currentStamps})" class="bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-700">+N</button>
+                                </div>
+                            `}
+                        </div>
+                        ${game.stamp_settings?.reward_text ? `<div class="mt-3 pt-3 border-t border-loyalty-primary/10"><p class="text-sm text-green-600">🎁 ${typeof game.stamp_settings.reward_text === 'object' ? (game.stamp_settings.reward_text.lt || game.stamp_settings.reward_text.en) : game.stamp_settings.reward_text}</p></div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function showStampSelector(gameId, maxStamps) {
+            const stamps = prompt(`How many stamps to add? (1-${maxStamps})`, '1');
+            if (stamps && !isNaN(parseInt(stamps))) {
+                const count = Math.min(Math.max(1, parseInt(stamps)), maxStamps);
+                addStampToGame(gameId, count);
+            }
+        }
+        
+        async function addStampToGame(gameId, stampsCount) {
+            if (!currentCard || !currentShopId) return;
+            try {
+                const result = await sdk.addStamps(gameId, currentCard.id, currentShopId, stampsCount);
+                console.log('[POS] Stamps added:', result);
+                await loadCustomerGamesAndCoupons();
+                renderGames();
+                if (result.is_completed) alert('🎉 Game completed! Customer earned a reward!');
+            } catch (error) {
+                console.error('[POS] Error adding stamps:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        async function restartGame(gameId) {
+            if (!currentCard || !currentShopId) return;
+            if (!confirm('Restart this game? This will reset all stamps.')) return;
+            try {
+                await sdk.restartGame(gameId, currentCard.id, currentShopId);
+                await loadCustomerGamesAndCoupons();
+                renderGames();
+            } catch (error) {
+                console.error('[POS] Error restarting game:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        // ==================== COUPONS FUNCTIONALITY ====================
+        
+        function openCouponsModal() {
+            document.getElementById('couponsModal').classList.remove('hidden');
+            renderCoupons();
+        }
+        
+        function closeCouponsModal() {
+            document.getElementById('couponsModal').classList.add('hidden');
+        }
+        
+        function renderCoupons() {
+            const content = document.getElementById('couponsContent');
+            
+            if (customerCoupons.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="text-5xl mb-4">🎟️</div>
+                        <p class="text-loyalty-text/70">No active coupons</p>
+                        <p class="text-loyalty-text/50 text-sm">Customer has no coupons available</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            content.innerHTML = customerCoupons.map(coupon => {
+                const offer = coupon.offer;
+                const game = coupon.game;
+                const title = offer ? (typeof offer.title === 'object' ? (offer.title.lt || offer.title.en) : offer.title) : 
+                              (game ? (typeof game.name === 'object' ? (game.name.lt || game.name.en) : game.name) : coupon.code);
+                const rewardDetails = offer?.reward_details || game?.reward_details || '';
+                const expiresAt = coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString('lt-LT') : null;
+                const requiresProduct = coupon.requires_product_selection;
+                const isPending = coupon.status === 'pending' || coupon.is_pending;
+                
+                return `
+                    <div class="bg-white rounded-xl border border-loyalty-primary/10 p-4 ${isPending ? 'bg-yellow-50 border-yellow-200' : ''}">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-loyalty-heading">${title}</h4>
+                                <p class="text-xs font-mono text-loyalty-text/50">${coupon.code}</p>
+                            </div>
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${isPending ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}">
+                                ${isPending ? '⏳ Pending' : '✓ Active'}
+                            </span>
+                        </div>
+                        ${rewardDetails ? `<p class="text-sm text-green-600 mb-2">🎁 ${rewardDetails}</p>` : ''}
+                        ${requiresProduct ? `<div class="flex items-center gap-1 text-orange-600 text-xs mb-2">📦 Requires product selection</div>` : ''}
+                        ${expiresAt ? `<p class="text-xs text-loyalty-text/50 mb-3">Expires: ${expiresAt}</p>` : ''}
+                        <div class="flex gap-2">
+                            ${requiresProduct ? `
+                                <button onclick="selectCouponProduct(${coupon.id})" class="flex-1 bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600">📦 Select Product</button>
+                            ` : `
+                                <button onclick="applyCouponToCart(${coupon.id})" class="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600">✓ Apply to Cart</button>
+                            `}
+                            <button onclick="redeemCouponDirectly(${coupon.id})" class="bg-loyalty-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-loyalty-heading">🎟️ Redeem</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function selectCouponProduct(couponId) {
+            selectedCouponForProducts = customerCoupons.find(c => c.id === couponId);
+            if (!selectedCouponForProducts) return;
+            
+            document.getElementById('couponProductsModal').classList.remove('hidden');
+            document.getElementById('couponProductsTitle').textContent = selectedCouponForProducts.code;
+            document.getElementById('couponProductsContent').innerHTML = '<div class="text-center py-8 text-loyalty-text/50">Loading products...</div>';
+            
+            try {
+                const result = await sdk.getCouponProducts(couponId);
+                renderCouponProducts(result.products || result || []);
+            } catch (error) {
+                console.error('[POS] Error loading coupon products:', error);
+                document.getElementById('couponProductsContent').innerHTML = `<div class="text-center py-8 text-red-500">Error: ${error.message}</div>`;
+            }
+        }
+        
+        function renderCouponProducts(products) {
+            const content = document.getElementById('couponProductsContent');
+            if (products.length === 0) {
+                content.innerHTML = `<div class="text-center py-8 text-loyalty-text/50">No products available</div>`;
+                return;
+            }
+            content.innerHTML = products.map(product => `
+                <button onclick="selectProductForCoupon(${product.id})" class="w-full flex items-center gap-3 p-3 rounded-lg border border-loyalty-primary/10 hover:bg-loyalty-light-bg hover:border-loyalty-primary transition-all text-left">
+                    ${product.image_url ? `<img src="${product.image_url}" class="w-12 h-12 rounded-lg object-cover">` : '<div class="w-12 h-12 bg-loyalty-light-bg rounded-lg flex items-center justify-center">📦</div>'}
+                    <div class="flex-1">
+                        <div class="font-medium text-loyalty-heading">${product.name}</div>
+                        ${product.description ? `<div class="text-xs text-loyalty-text/70">${product.description}</div>` : ''}
+                    </div>
+                    <div class="text-loyalty-primary font-semibold">→</div>
+                </button>
+            `).join('');
+        }
+        
+        function closeCouponProductsModal() {
+            document.getElementById('couponProductsModal').classList.add('hidden');
+            selectedCouponForProducts = null;
+        }
+        
+        function selectProductForCoupon(productId) {
+            if (!selectedCouponForProducts) return;
+            closeCouponProductsModal();
+            appliedCoupon = { ...selectedCouponForProducts, selected_product_id: productId };
+            couponDiscount = calculateCouponDiscountAmount(appliedCoupon);
+            document.getElementById('appliedCouponName').textContent = appliedCoupon.offer?.title || appliedCoupon.game?.name || appliedCoupon.code;
+            document.getElementById('appliedCouponDesc').textContent = 'Product selected';
+            document.getElementById('appliedCouponRow').classList.remove('hidden');
+            closeCouponsModal();
+            updateCart();
+        }
+        
+        function applyCouponToCart(couponId) {
+            const coupon = customerCoupons.find(c => c.id === couponId);
+            if (!coupon) return;
+            appliedCoupon = coupon;
+            couponDiscount = calculateCouponDiscountAmount(coupon);
+            const title = coupon.offer?.title || coupon.game?.name || coupon.code;
+            document.getElementById('appliedCouponName').textContent = typeof title === 'object' ? (title.lt || title.en) : title;
+            document.getElementById('appliedCouponDesc').textContent = coupon.offer?.reward_details || coupon.game?.reward_details || '';
+            document.getElementById('appliedCouponRow').classList.remove('hidden');
+            closeCouponsModal();
+            updateCart();
+        }
+        
+        function calculateCouponDiscountAmount(coupon) {
+            if (!coupon || !coupon.offer) return 0;
+            const offer = coupon.offer;
+            const subtotal = calculateSubtotal();
+            if (offer.discount_type === 'percentage' && offer.discount_amount) return subtotal * (offer.discount_amount / 100);
+            if (offer.discount_type === 'fixed' && offer.discount_amount) return Math.min(offer.discount_amount, subtotal);
+            if (offer.reward_type === 'free_product' && offer.original_price) return offer.original_price;
+            return 0;
+        }
+        
+        function removeAppliedCoupon() {
+            appliedCoupon = null;
+            couponDiscount = 0;
+            document.getElementById('appliedCouponRow').classList.add('hidden');
+            updateCart();
+        }
+        
+        async function redeemCouponDirectly(couponId) {
+            const coupon = customerCoupons.find(c => c.id === couponId);
+            if (!coupon) return;
+            if (!confirm(`Redeem coupon ${coupon.code}? This action cannot be undone.`)) return;
+            try {
+                await sdk.redeemCoupon(couponId, currentShopId, coupon.selected_product_id);
+                alert('✓ Coupon redeemed successfully!');
+                await loadCustomerGamesAndCoupons();
+                renderCoupons();
+                if (appliedCoupon?.id === couponId) removeAppliedCoupon();
+            } catch (error) {
+                console.error('[POS] Error redeeming coupon:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        async function verifyCouponCode() {
+            const code = document.getElementById('couponCodeInput').value.trim();
+            if (!code) { alert('Please enter a coupon code'); return; }
+            const btn = document.getElementById('verifyCouponBtn');
+            btn.textContent = '...';
+            btn.disabled = true;
+            try {
+                const result = await sdk.verifyCoupon(code, currentShopId);
+                console.log('[POS] Coupon verified:', result);
+                if (!currentCustomer && result.user) {
+                    handleCardIdentified({ loyalty_card_id: result.card?.id, card_number: result.card?.card_number, points: result.card?.points_balance || 0, user: result.user, points_rules: result.points_rules });
+                }
+                appliedCoupon = result.coupon || result;
+                couponDiscount = calculateCouponDiscountAmount(appliedCoupon);
+                const title = appliedCoupon.offer?.title || appliedCoupon.game?.name || appliedCoupon.code;
+                document.getElementById('appliedCouponName').textContent = typeof title === 'object' ? (title.lt || title.en) : title;
+                document.getElementById('appliedCouponDesc').textContent = appliedCoupon.offer?.reward_details || '';
+                document.getElementById('appliedCouponRow').classList.remove('hidden');
+                document.getElementById('couponCodeInput').value = '';
+                updateCart();
+                alert('✓ Coupon verified and applied!');
+            } catch (error) {
+                console.error('[POS] Error verifying coupon:', error);
+                alert('Error: ' + error.message);
+            } finally {
+                btn.textContent = '🎟️ Verify';
+                btn.disabled = false;
+            }
         }
         
         async function lookupCard() {
@@ -864,13 +1291,18 @@
             if (!cardNumber) return alert('Enter card number');
             
             try {
-                const cards = await sdk.getLoyaltyCards({ card_number: cardNumber });
-                if (cards.data && cards.data.length > 0) {
-                    handleCardIdentified(cards.data[0]);
+                // Use getLoyaltyCardInfo for detailed info including user data
+                const cardInfo = await sdk.getLoyaltyCardInfo({ card_number: cardNumber });
+                console.log('[POS] Card lookup result:', cardInfo);
+                
+                if (cardInfo && (cardInfo.id || cardInfo.data?.id)) {
+                    const card = cardInfo.data || cardInfo;
+                    handleCardIdentified(card);
                 } else {
                     alert('Card not found');
                 }
             } catch (error) {
+                console.error('[POS] Card lookup error:', error);
                 alert('Error: ' + error.message);
             }
         }
@@ -926,7 +1358,7 @@
             return calculatePointsValue(pointsToRedeem);
         }
         
-        function calculateTotal() { return Math.max(0, calculateSubtotal() - calculateDiscount() - calculatePointsDiscount()); }
+        function calculateTotal() { return Math.max(0, calculateSubtotal() - calculateDiscount() - calculatePointsDiscount() - couponDiscount); }
         
         // Calculate points to earn using pointsRules
         function calculatePointsToEarn() {
@@ -976,8 +1408,14 @@
             const total = calculateTotal();
             const pointsToEarn = calculatePointsToEarn();
             
+            // Recalculate coupon discount based on current subtotal
+            if (appliedCoupon) couponDiscount = calculateCouponDiscountAmount(appliedCoupon);
+            
             document.getElementById('subtotal').textContent = '€' + subtotal.toFixed(2);
-            document.getElementById('totalAmount').textContent = '€' + total.toFixed(2);
+            document.getElementById('totalAmount').textContent = '€' + calculateTotal().toFixed(2);
+            
+            document.getElementById('couponDiscountRow').classList.toggle('hidden', couponDiscount <= 0);
+            document.getElementById('couponDiscountAmount').textContent = '-€' + couponDiscount.toFixed(2);
             
             document.getElementById('discountRow').classList.toggle('hidden', discount <= 0);
             document.getElementById('discountAmount').textContent = '-€' + discount.toFixed(2);
@@ -1027,6 +1465,16 @@
                 const pointsEarned = calculatePointsToEarn();
                 const pointsDiscount = calculatePointsDiscount();
                 
+                // Redeem applied coupon first
+                if (appliedCoupon && currentShopId) {
+                    try {
+                        await sdk.redeemCoupon(appliedCoupon.id, currentShopId, appliedCoupon.selected_product_id);
+                        console.log('[POS] Coupon redeemed:', appliedCoupon.code);
+                    } catch (couponError) {
+                        console.error('[POS] Coupon redemption error:', couponError);
+                    }
+                }
+                
                 // Create real transaction if customer is identified
                 if (currentCustomer && currentCard) {
                     try {
@@ -1046,7 +1494,7 @@
                             loyalty_card_id: currentCard.id,
                             points_redeemed: pointsToRedeem,
                             points_discount_amount: pointsDiscount,
-                            description: `POS Purchase - ${cart.map(i => i.name).join(', ')}`,
+                            description: `POS Purchase - ${cart.map(i => i.name).join(', ')}${appliedCoupon ? ` (Coupon: ${appliedCoupon.code})` : ''}`,
                             cart_items: cartItems
                         });
                         console.log('[POS] Transaction created:', transactionResult);
@@ -1131,8 +1579,11 @@
         function clearCart() {
             cart = [];
             appliedOffer = null;
+            appliedCoupon = null;
+            couponDiscount = 0;
             pointsToRedeem = 0;
             document.getElementById('redeemSlider').value = 0;
+            document.getElementById('appliedCouponRow').classList.add('hidden');
             updateCart();
         }
         
@@ -1157,6 +1608,12 @@
             shoppingSessionId = null;
             sessionChannel = null;
             pointsRules = null;
+            customerGames = [];
+            customerCoupons = [];
+            
+            document.getElementById('gamesCount').textContent = '0';
+            document.getElementById('couponsCount').textContent = '0';
+            removeAppliedCoupon();
             
             // Remove payment notification if visible
             const notification = document.getElementById('paymentNotification');
