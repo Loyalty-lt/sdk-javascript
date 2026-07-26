@@ -49,7 +49,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Loyalty-lt/sdk-javascript"
+    "url": "git+https://github.com/Loyalty-lt/sdk-javascript.git"
   },
   "bugs": {
     "url": "https://github.com/Loyalty-lt/sdk-javascript/issues"
