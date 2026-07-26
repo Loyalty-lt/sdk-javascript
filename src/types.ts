@@ -61,7 +61,7 @@ export interface QrLoginPollResponse {
 export interface QrCardScanSession {
   session_id: string;
   qr_code: string;
-  ably_channel: string;
+  realtime_channel: string;
   partner_id: number;
   partner_name: string;
   shop_id?: number;
@@ -95,13 +95,17 @@ export interface QrCardScanPollResponse {
   expires_at: string;
 }
 
-// Ably Token Types
-export interface AblyTokenResponse {
-  token: string;
-  expires: number;
-  channel: string;
-  session_type: 'login' | 'card_scan';
-  channels?: Record<string, string[]>;
+// Realtime (Laravel Reverb) connection details — `GET /{locale}/shop/realtime/config`
+export interface RealtimeConfigResponse {
+  key: string;
+  host: string;
+  port: number;
+  scheme: string;
+  channel_prefix: {
+    qr_login: string;
+    qr_card: string;
+  };
+  event: string;
 }
 
 // Loyalty Card Types
@@ -578,8 +582,8 @@ export interface QrCardIdentifiedMessage extends WebSocketMessage {
   };
 }
 
-// Shopping Session Ably Events (Partner App Integration)
-// Channel: user-{userId}
+// Shopping Session Realtime Events (Partner App Integration)
+// Channel: user.{userId}
 
 export interface ShopInfo {
   id: number;
@@ -695,13 +699,13 @@ export interface SessionUpdateEvent {
   timestamp: string;
 }
 
-// Ably Channel Names
-export type UserChannelName = `user-${number}`;
-export type SessionChannelName = `session-${string}`;
-export type QrLoginChannelName = `qr-login:${string}`;
-export type QrCardChannelName = `qr-card:${string}`;
+// Reverb Channel Names (Pusher protocol forbids ":" in channel names)
+export type UserChannelName = `user.${number}`;
+export type SessionChannelName = `shopping-session.${string}`;
+export type QrLoginChannelName = `qr-login.${string}`;
+export type QrCardChannelName = `qr-card.${string}`;
 
-// Ably Event Types
+// Realtime Event Types
 export type UserChannelEvents = 
   | 'session_created'
   | 'session_ended'
@@ -786,7 +790,7 @@ export interface SDKConfig {
   timeout?: number;
   retries?: number;
   token?: string;
-  ablyKey?: string;
+  reverbKey?: string;
   debug?: boolean;
 }
 

@@ -5,7 +5,6 @@ const sdk = new LoyaltySDK({
   apiKey: 'your-api-key',
   apiSecret: 'your-api-secret',
   partnerId: 'your-partner-id',
-  ablyKey: 'NbiNAw.ViBCOw:TmxYxcFt2Tq_iNWDw7Fh-MJDNpHezOu7n-_SvJKCVE4', // Real Ably key
   environment: 'staging', // or 'production'
   locale: 'lt',
   debug: true

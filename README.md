@@ -5,14 +5,14 @@ Official JavaScript SDK for Loyalty.lt Shop API - integrate loyalty program func
 ## Installation
 
 ```bash
-npm install @loyaltylt/sdk ably
+npm install @loyaltylt/sdk pusher-js
 # or
-yarn add @loyaltylt/sdk ably
+yarn add @loyaltylt/sdk pusher-js
 ```
 
 For React components:
 ```bash
-npm install @loyaltylt/sdk ably qrcode.react
+npm install @loyaltylt/sdk pusher-js qrcode.react
 ```
 
 ## Quick Start
@@ -189,12 +189,20 @@ await sdk.deleteOffer(offer.id);
 const shops = await sdk.getShops({ is_active: true, is_virtual: false });
 ```
 
-## Ably Channels
+## Realtime Channels
+
+Realtime runs on Laravel Reverb (Pusher protocol) at `wss://ws.loyalty.lt`.
+Both QR channels are **public** — the unguessable session id in the channel name
+is the secret — so there is no token to fetch and no auth handshake.
 
 | Feature | Channel | Event |
 |---------|---------|-------|
-| QR Login | `qr-login:{session_id}` | `status_update` |
-| QR Card Scan | `qr-card:{session_id}` | `card_identified` |
+| QR Login | `qr-login.{session_id}` | `status_update` |
+| QR Card Scan | `qr-card.{session_id}` | `card_identified` |
+
+`sdk.getRealtimeConfig()` returns the connection details (`key`, `host`, `port`,
+`scheme`) if you want to drive `pusher-js` yourself instead of using
+`sdk.subscribeToQrLogin()` / `sdk.subscribeToQrCardScan()`.
 
 ## Error Handling
 

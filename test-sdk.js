@@ -40,12 +40,12 @@ async function testSDK() {
     const session = await sdk.generateQrCardSession('Test Terminal');
     console.log('   ✓ Session ID:', session.session_id);
     console.log('   ✓ QR Code:', session.qr_code);
-    console.log('   ✓ Channel:', session.ably_channel);
+    console.log('   ✓ Channel:', session.realtime_channel);
 
-    console.log('\n6. Get Ably Token...');
-    const token = await sdk.getAblyToken(session.session_id);
-    console.log('   ✓ Token received');
-    console.log('   ✓ Channel:', token.channel);
+    console.log('\n6. Get realtime config...');
+    const rt = await sdk.getRealtimeConfig();
+    console.log('   ✓ Reverb key received');
+    console.log('   ✓ Host:', rt.host + ':' + rt.port);
 
     console.log('\n✅ All tests passed!');
 

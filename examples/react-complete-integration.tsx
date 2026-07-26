@@ -9,7 +9,7 @@
  * - Points display and redemption UI
  * 
  * Installation:
- * npm install @loyaltylt/sdk qrcode.react ably
+ * npm install @loyaltylt/sdk qrcode.react pusher-js
  */
 
 import { useState, useEffect } from 'react';

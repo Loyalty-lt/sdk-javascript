@@ -7,7 +7,7 @@
     
     <!-- Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.2/dist/axios.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ably@1.2.48/build/ably.min.js"></script>
+    <script src="https://js.pusher.com/8.4/pusher.min.js"></script>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -288,8 +288,8 @@
     <script>
         let sdk = null;
         let qrSession = null;
-        let ablyClient = null;
-        let ablyChannel = null;
+        let realtimeClient = null;
+        let realtimeChannel = null;
         let timerInterval = null;
         
         const QR_DURATION = 5 * 60 * 1000;
@@ -370,16 +370,23 @@
 
         async function subscribeToEvents(sessionId) {
             try {
-                if (ablyChannel) ablyChannel.unsubscribe();
-                if (ablyClient) ablyClient.close();
+                                if (realtimeClient) realtimeClient.disconnect();
 
-                const tokenResponse = await sdk.getAblyToken(sessionId);
-                log(`Ably channel: ${tokenResponse.channel}`, 'success');
+                const rt = await sdk.getRealtimeConfig();
+                log(`Reverb host: ${rt.host}:${rt.port}`, 'success');
 
-                ablyClient = new Ably.Realtime({ token: tokenResponse.token });
-                ablyChannel = ablyClient.channels.get(tokenResponse.channel);
+                realtimeClient = new Pusher(rt.key, {
+                    wsHost: rt.host,
+                    wsPort: rt.port,
+                    wssPort: rt.port,
+                    forceTLS: rt.scheme === 'https',
+                    enabledTransports: ['ws', 'wss'],
+                    cluster: '',
+                    disableStats: true,
+                });
+                realtimeChannel = realtimeClient.subscribe(`qr-login.${sessionId}`);
 
-                ablyChannel.subscribe('card_identified', (message) => {
+                realtimeChannel.bind('card_identified', (data) => {
                     log('🎉 Card identified!', 'success');
                     handleCardIdentified(message.data);
                 });
@@ -387,7 +394,7 @@
                 log('Subscribed to events', 'success');
 
             } catch (error) {
-                log(`Ably error: ${error.message}`, 'error');
+                log(`Realtime error: ${error.message}`, 'error');
                 startPolling(sessionId);
             }
         }
@@ -480,13 +487,10 @@
                 clearInterval(timerInterval);
                 timerInterval = null;
             }
-            if (ablyChannel) {
-                ablyChannel.unsubscribe();
-                ablyChannel = null;
-            }
-            if (ablyClient) {
-                ablyClient.close();
-                ablyClient = null;
+            realtimeChannel = null;
+            if (realtimeClient) {
+                realtimeClient.disconnect();
+                realtimeClient = null;
             }
         }
 

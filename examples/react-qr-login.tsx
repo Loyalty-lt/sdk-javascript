@@ -7,7 +7,7 @@
  * into your Next.js or React application for user authentication.
  * 
  * Installation:
- * npm install @loyaltylt/sdk qrcode.react ably
+ * npm install @loyaltylt/sdk qrcode.react pusher-js
  */
 
 import { QRLogin } from '@loyaltylt/sdk/react';

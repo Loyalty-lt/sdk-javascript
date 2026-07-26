@@ -6,10 +6,10 @@ import copy from 'rollup-plugin-copy';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-const external = ['axios', 'ably', 'react', 'react-dom', 'react/jsx-runtime', 'qrcode.react'];
+const external = ['axios', 'pusher-js', 'react', 'react-dom', 'react/jsx-runtime', 'qrcode.react'];
 const globals = {
   axios: 'axios',
-  ably: 'Ably',
+  'pusher-js': 'Pusher',
   react: 'React',
   'react-dom': 'ReactDOM',
   'qrcode.react': 'QRCode',
@@ -24,7 +24,7 @@ export default [
       format: 'esm',
       sourcemap: true,
     },
-    external: ['axios', 'ably'],
+    external: ['axios', 'pusher-js'],
     plugins: [
       resolve({
         browser: true,
@@ -49,7 +49,7 @@ export default [
       sourcemap: true,
       exports: 'named',
     },
-    external: ['axios', 'ably'],
+    external: ['axios', 'pusher-js'],
     plugins: [
       resolve({
         browser: false,
@@ -73,10 +73,10 @@ export default [
       sourcemap: true,
       globals: {
         axios: 'axios',
-        ably: 'Ably',
+        'pusher-js': 'Pusher',
       },
     },
-    external: ['axios', 'ably'],
+    external: ['axios', 'pusher-js'],
     plugins: [
       resolve({
         browser: true,

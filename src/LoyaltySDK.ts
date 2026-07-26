@@ -7,7 +7,7 @@ import {
   QrCardScanSession,
   QrCardScanData,
   QrCardScanPollResponse,
-  AblyTokenResponse,
+  RealtimeConfigResponse,
   LoyaltyCard,
   PointsTransaction,
   PointsBalance,
@@ -36,6 +36,7 @@ export class LoyaltySDK {
   private httpClient: AxiosInstance;
   private configManager: ConfigManager;
   private webSocketManager: WebSocketManager;
+  private realtimeConfig: RealtimeConfigResponse | null = null;
   private retryCount: number = 0;
 
   constructor(config: LoyaltySDKConfig) {
@@ -105,12 +106,15 @@ export class LoyaltySDK {
     return await this.makeRequest('GET', '/shop/system/health');
   }
 
-  async getAblyToken(sessionId: string, options?: { user_id?: number; shopping_session_id?: string }): Promise<AblyTokenResponse> {
-    return await this.makeRequest<AblyTokenResponse>('POST', '/shop/ably/token', {
-      session_id: sessionId,
-      ...(options?.user_id && { user_id: options.user_id }),
-      ...(options?.shopping_session_id && { shopping_session_id: options.shopping_session_id })
-    });
+  /**
+   * Reverb connection details. Cached for the lifetime of the SDK instance —
+   * the app key never rotates mid-session.
+   */
+  async getRealtimeConfig(): Promise<RealtimeConfigResponse> {
+    if (!this.realtimeConfig) {
+      this.realtimeConfig = await this.makeRequest<RealtimeConfigResponse>('GET', '/shop/realtime/config');
+    }
+    return this.realtimeConfig;
   }
 
   async generateQrLogin(deviceName?: string, shopId?: number): Promise<QrLoginSession> {
@@ -125,15 +129,7 @@ export class LoyaltySDK {
   }
 
   async subscribeToQrLogin(sessionId: string, callback: (message: QrLoginStatusMessage) => void): Promise<WebSocketSubscription> {
-    const tokenResponse = await this.getAblyToken(sessionId);
-    
-    // Token refresh callback for automatic renewal
-    const tokenRefreshCallback = async (): Promise<string> => {
-      const newTokenResponse = await this.getAblyToken(sessionId);
-      return newTokenResponse.token;
-    };
-    
-    await this.webSocketManager.connectWithToken(tokenResponse.token, tokenRefreshCallback);
+    await this.webSocketManager.connect(await this.getRealtimeConfig());
     return this.webSocketManager.subscribeToQrLogin(sessionId, callback);
   }
 
@@ -158,15 +154,7 @@ export class LoyaltySDK {
   }
 
   async subscribeToQrCardScan(sessionId: string, callback: (cardData: QrCardScanData) => void): Promise<WebSocketSubscription> {
-    const tokenResponse = await this.getAblyToken(sessionId);
-    
-    // Token refresh callback for automatic renewal
-    const tokenRefreshCallback = async (): Promise<string> => {
-      const newTokenResponse = await this.getAblyToken(sessionId);
-      return newTokenResponse.token;
-    };
-    
-    await this.webSocketManager.connectWithToken(tokenResponse.token, tokenRefreshCallback);
+    await this.webSocketManager.connect(await this.getRealtimeConfig());
     return this.webSocketManager.subscribeToQrCardScan(sessionId, (message: QrCardIdentifiedMessage) => {
       callback(message.data.card_data);
     });
@@ -675,36 +663,8 @@ export class LoyaltySDK {
     this.webSocketManager.disconnect();
   }
 
-  /**
-   * Create an Ably Realtime client with automatic token renewal
-   * Use this for shopping sessions or other real-time features
-   * @param sessionId - The session ID for token generation
-   * @param options - Optional parameters for extended permissions
-   * @returns Ably client options with authCallback configured
-   */
-  async createAblyClientOptions(
-    sessionId: string, 
-    options?: { user_id?: number; shopping_session_id?: string }
-  ): Promise<{ token: string; authCallback: (tokenParams: any, callback: (err: Error | null, token: string | null) => void) => void }> {
-    const tokenResponse = await this.getAblyToken(sessionId, options);
-    
-    const authCallback = async (tokenParams: any, callback: (err: Error | null, token: string | null) => void) => {
-      try {
-        const newTokenResponse = await this.getAblyToken(sessionId, options);
-        callback(null, newTokenResponse.token);
-      } catch (err) {
-        callback(err as Error, null);
-      }
-    };
-    
-    return {
-      token: tokenResponse.token,
-      authCallback
-    };
-  }
-
   getVersion(): string {
-    return '1.0.0';
+    return '2.0.0';
   }
 
   private async makeRequest<T = any>(

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import Ably from 'ably';
+import Pusher from 'pusher-js';
 
 function isMobileDevice() {
   if (typeof window === 'undefined') return false;
@@ -103,7 +103,7 @@ export function QRLogin({
   const [status, setStatus] = useState<LoginStatus>('generating');
   const [qrData, setQrData] = useState<{ session_id: string; qr_code: string; expires_at: string } | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(0);
-  const [ablyClient, setAblyClient] = useState<Ably.Realtime | null>(null);
+  const [realtimeClient, setRealtimeClient] = useState<Pusher | null>(null);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [phone, setPhone] = useState('');
   const [sendingLink, setSendingLink] = useState(false);
@@ -142,40 +142,47 @@ export function QRLogin({
       const expiresAt = new Date(result.data.expires_at).getTime();
       setTimeRemaining(Math.max(0, expiresAt - Date.now()));
 
-      const tokenResponse = await fetch(`${apiUrl}/${locale}/shop/ably/token`, {
-        method: 'POST',
+      // Reverb connection details. The QR channel is public — the unguessable
+      // session id is the secret — so there is no token to mint.
+      const configResponse = await fetch(`${apiUrl}/${locale}/shop/realtime/config`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'X-API-Key': config.apiKey,
           'X-API-Secret': config.apiSecret,
         },
-        body: JSON.stringify({ session_id: result.data.session_id }),
       });
 
-      const tokenResult = await tokenResponse.json();
+      const configResult = await configResponse.json();
 
-      if (!tokenResponse.ok || !tokenResult.success) {
-        throw new Error('Failed to get Ably token');
+      if (!configResponse.ok || !configResult.success) {
+        throw new Error('Failed to get realtime configuration');
       }
 
-      const ably = new Ably.Realtime({ token: tokenResult.data.token });
-      setAblyClient(ably);
+      const rt = configResult.data;
+      const pusher = new Pusher(rt.key, {
+        wsHost: rt.host,
+        wsPort: rt.port,
+        wssPort: rt.port,
+        forceTLS: rt.scheme === 'https',
+        enabledTransports: ['ws', 'wss'],
+        cluster: '',
+        disableStats: true,
+      } as any);
+      setRealtimeClient(pusher);
 
-      const channel = ably.channels.get(tokenResult.data.channel);
+      const channel = pusher.subscribe(`qr-login.${result.data.session_id}`);
 
-      channel.subscribe('status_update', async (message) => {
-        const data = message.data;
-
+      channel.bind('status_update', (data: any) => {
         if (data.status === 'scanned') {
           setStatus('scanned');
           callbacks?.onScanned?.();
         } else if (data.status === 'authenticated') {
           setStatus('authenticated');
           callbacks?.onAuthenticated?.(data);
-          ably.close();
+          pusher.disconnect();
         } else if (data.status === 'cancelled' || data.status === 'failed') {
           callbacks?.onCancelled?.();
-          ably.close();
+          pusher.disconnect();
           if (autoRegenerate) {
             setStatus('generating');
             setQrData(null);
@@ -200,7 +207,7 @@ export function QRLogin({
         const newTime = prev - 1000;
         if (newTime <= 0) {
           callbacks?.onExpired?.();
-          ablyClient?.close();
+          realtimeClient?.disconnect();
           if (autoRegenerate) {
             setStatus('generating');
             setQrData(null);
@@ -215,7 +222,7 @@ export function QRLogin({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [status, ablyClient, generateQR, autoRegenerate, callbacks]);
+  }, [status, realtimeClient, generateQR, autoRegenerate, callbacks]);
 
   useEffect(() => {
     generateQR();
@@ -223,9 +230,9 @@ export function QRLogin({
 
   useEffect(() => {
     return () => {
-      ablyClient?.close();
+      realtimeClient?.disconnect();
     };
-  }, [ablyClient]);
+  }, [realtimeClient]);
 
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000);
@@ -234,7 +241,7 @@ export function QRLogin({
   };
 
   const handleRegenerate = () => {
-    ablyClient?.close();
+    realtimeClient?.disconnect();
     setStatus('generating');
     setQrData(null);
     generateQR();

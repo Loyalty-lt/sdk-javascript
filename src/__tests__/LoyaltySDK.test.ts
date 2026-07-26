@@ -23,16 +23,19 @@ jest.mock('axios', () => ({
   }))
 }));
 
-jest.mock('ably', () => ({
-  Realtime: jest.fn(() => ({
+jest.mock('pusher-js', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
     connection: {
-      on: jest.fn()
+      bind: jest.fn(),
+      state: 'connected'
     },
-    channels: {
-      get: jest.fn(() => ({
-        subscribe: jest.fn()
-      }))
-    }
+    subscribe: jest.fn(() => ({
+      bind: jest.fn(),
+      unbind: jest.fn()
+    })),
+    unsubscribe: jest.fn(),
+    disconnect: jest.fn()
   }))
 }));
 
