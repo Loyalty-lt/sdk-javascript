@@ -85,7 +85,7 @@ describe('LoyaltySDK', () => {
 
   describe('Utility Methods', () => {
     it('should return SDK version', () => {
-      expect(sdk.getVersion()).toBe('1.0.0');
+      expect(sdk.getVersion()).toBe('2.0.0');
     });
 
     it('should disconnect websocket', () => {
