@@ -271,11 +271,11 @@ export class LoyaltySDK {
   }
 
   async getCategories(): Promise<string[]> {
-    return await this.makeRequest<string[]>('GET', '/shop/categories');
+    return await this.makeRequest<string[]>('GET', '/shop/products/categories');
   }
 
   async getSyncStatus(): Promise<any> {
-    return await this.makeRequest('GET', '/shop/sync-status');
+    return await this.makeRequest('GET', '/shop/products/sync-status');
   }
 
   async xmlImportFromUrl(url: string, options?: any): Promise<any> {
